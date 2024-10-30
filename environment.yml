@@ -1,7 +1,6 @@
 name: scattering-problem-env
 channels:
   - conda-forge
-  - pypi
   - defaults
 dependencies:
   - python=3.12.6
@@ -9,3 +8,4 @@ dependencies:
   - scipy=1.13.1
   - matplotlib=3.8.4
   - pytorch==2.3.0
+  - pyDOE==0.3.8
