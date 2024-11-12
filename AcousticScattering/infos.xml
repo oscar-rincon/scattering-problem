@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<models>
+	<model>
+		<title>Acoustic wave scattering</title>
+		<summary>2D models of multiple acoustic scattering</summary>
+		<file type="pro">scattering.pro</file>
+		<preview type="png">infos.png</preview>
+		<url>https://gitlab.onelab.info/doc/models/wikis/Acoustic-scattering</url>
+	</model>
+</models>
