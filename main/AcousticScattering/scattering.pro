@@ -27,7 +27,7 @@ Function {
   //until NMAX to hide some menu if the number of obstacles decrease
   For j In {0:NMAX-1}
     DefineConstant[
-      BCond~{j} = {DIRICHLET,
+      BCond~{j} = {NEUMANN,
         Choices{DIRICHLET = "Dirichlet", NEUMANN = "Neumann"},
         Name StrCat[MENU_OBST, Sprintf("/Obst. %g/0Boundary condition", j+1)],
         Visible (j < N_scat_to_create && Type_PROBLEM == IMPENETRABLE)}
@@ -51,7 +51,7 @@ Function {
 
   //angle of incident plane wave
   DefineConstant[
-    beta_inc_aux = {1., Min -1., Max 1., Step 0.01 ,
+    beta_inc_aux = {0., Min -1., Max 1., Step 0.01 ,
       Name StrCat[MENU_INPUT, MENU_UINC, "/Angle (in Pi)"],
       Visible (INCIDENT_WAVE == PLANEWAVE)}
   ];
