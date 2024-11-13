@@ -224,3 +224,36 @@ def process_onelab_data(file_path):
 
     return X, Y, elements-1, u_amp
 
+def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, u_amp_fem):
+    """
+    Plots the FEM results for the scattered and total displacement amplitudes.
+
+    Parameters:
+    X_fem (numpy.ndarray): X coordinates of the FEM mesh.
+    Y_fem (numpy.ndarray): Y coordinates of the FEM mesh.
+    elements_fem (numpy.ndarray): Elements of the FEM mesh.
+    uscn_amp_fem (numpy.ndarray): Scattered displacement amplitude from FEM.
+    u_amp_fem (numpy.ndarray): Total displacement amplitude from FEM.
+    """
+    fig, axs = plt.subplots(1, 2, figsize=(8, 6))
+
+    # Plot the first result
+    axs[0].tricontourf(X_fem, Y_fem, elements_fem, uscn_amp_fem, cmap="RdYlBu", levels=100)
+    axs[0].triplot(X_fem, Y_fem, elements_fem, color='gray', lw=0.1)
+    axs[0].axis('off')
+    cbar1 = plt.colorbar(axs[0].collections[0], ax=axs[0], shrink=0.9, orientation="horizontal", pad=0.07)
+    cbar1.set_ticks([uscn_amp_fem.min(), uscn_amp_fem.max()])
+    cbar1.set_ticklabels([f'{uscn_amp_fem.min():.2f}', f'{uscn_amp_fem.max():.2f}'])
+    cbar1.set_label("Amplitude $u_{\\text{sct}}$")
+    axs[0].set_aspect('equal', adjustable='box')
+
+    # Plot the second result
+    axs[1].tricontourf(X_fem, Y_fem, elements_fem, u_amp_fem, cmap="RdYlBu", levels=100)
+    axs[1].triplot(X_fem, Y_fem, elements_fem, color='gray', lw=0.1)
+    axs[1].axis('off')
+    cbar2 = plt.colorbar(axs[1].collections[0], ax=axs[1], shrink=0.9, orientation="horizontal", pad=0.07)
+    cbar2.set_ticks([u_amp_fem.min(), u_amp_fem.max()])
+    cbar2.set_ticklabels([f'{u_amp_fem.min():.2f}', f'{u_amp_fem.max():.2f}'])
+    axs[1].set_aspect('equal', adjustable='box')
+    cbar2.set_label("Amplitude $u$")
+    plt.show()   # Show the plot
