@@ -17,8 +17,10 @@ from numpy import pi, exp, cos, zeros_like, ma, real, round, min, max, std, mean
 import matplotlib.pyplot as plt
 import gmsh
 import meshio
+from scipy.interpolate import griddata
 
-def u_exact_calc(r, theta, r_i, k):
+
+def u_exact_calc(r, theta, r_i, k, nmax=None):
     """
     Calculate the exact solution for the scattered and incident waves around a cylinder.
 
@@ -36,7 +38,10 @@ def u_exact_calc(r, theta, r_i, k):
     """
     us_scn = zeros_like(r, dtype=complex)  # Initialize scattered wave
     us_inc = zeros_like(r, dtype=complex)  # Initialize scattered wave
-    nmax = int(30 + (k * r_i)**1.01) # Number of terms in the series
+
+    if nmax is None:
+        nmax = int(30 + (k * r_i)**1.01)
+    
     for n in range(nmax, -1, -1):
         if n == 0:
             # Coefficient for n = 0
@@ -48,8 +53,8 @@ def u_exact_calc(r, theta, r_i, k):
                                      (hankel2(n + 1, k*r_i) - hankel2(n - 1, k*r_i)))
             en = 2.0
         # Sum terms for both scattered and incident waves
-        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta)
-        uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta) * exp(1.0j*pi) 
+        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) * exp(1.0j*pi) 
+        uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta) #* exp(1.0j*pi) 
 
         # Add terms to the total displacement field
         us_inc = us_inc + uin
@@ -61,9 +66,29 @@ def u_exact_calc(r, theta, r_i, k):
     # Extract the amplitude of the displacement
     u_scn_amp = np.real(us_scn)
     u_amp = np.real(u)   
-     
+    
     return u_scn_amp, u_amp 
 
+def mask_displacement(R_exact, r_i, r_e, u_amp_exact, u_scn_amp_exact):
+    """
+    Mask the displacement outside the scatterer.
+
+    Parameters:
+    R_exact (numpy.ndarray): Radial coordinates.
+    r_i (float): Inner radius.
+    r_e (float): Outer radius.
+    u_amp_exact (numpy.ma.core.MaskedArray): Exact displacement amplitude.
+    u_scn_amp_exact (numpy.ma.core.MaskedArray): Exact scattered displacement amplitude.
+
+    Returns:
+    u_amp_exact (numpy.ma.core.MaskedArray): Masked exact displacement amplitude.
+    u_scn_amp_exact (numpy.ma.core.MaskedArray): Masked exact scattered displacement amplitude.
+    """
+    u_amp_exact = np.ma.masked_where(R_exact < r_i, u_amp_exact)
+    u_amp_exact = np.ma.masked_where(R_exact > r_e, u_amp_exact)
+    u_scn_amp_exact = np.ma.masked_where(R_exact < r_i, u_scn_amp_exact)
+    u_scn_amp_exact = np.ma.masked_where(R_exact > r_e, u_scn_amp_exact)
+    return u_amp_exact, u_scn_amp_exact
 
 def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
     """
@@ -81,7 +106,8 @@ def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
     c1 = axs[0].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
     cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
     cb1.set_label("Amplitude $u_{\\text{sct}}$")
-    cb1.set_ticks([np.round(np.min(u_scn_amp), 2), np.round(np.max(u_scn_amp), 2)])
+    #cb1.set_ticks([np.round(np.min(u_scn_amp), 2), np.round(np.max(u_scn_amp), 2)])
+    cb1.set_ticks([np.trunc(np.min(u_scn_amp) * 1e+2) / 1e+2, np.trunc(np.max(u_scn_amp) * 1e+2) / 1e+2])
     axs[0].axis("off")
     axs[0].set_aspect("equal")
 
@@ -89,68 +115,87 @@ def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
     c2 = axs[1].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
     cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
     cb2.set_label("Amplitude $u$")
-    cb2.set_ticks([np.round(np.min(u_amp), 2), np.round(np.max(u_amp), 2)])
+    cb2.set_ticks([np.trunc(np.min(u_amp) * 1e+2) / 1e+2, np.trunc(np.max(u_amp) * 1e+2) / 1e+2])
     axs[1].axis("off")
     axs[1].set_aspect("equal")
 
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.show()
  
 
-def plot_mesh(file_path):
+
+def plot_mesh_from_file(file_path_msh):
     """
-    Plots a triangular mesh using matplotlib.
+    Reads a mesh file using meshio, extracts the points and cells, and plots the mesh.
+    Also calculates the number of connections and nodes in the physical domain 
+    and absorbing layer, and returns these values.
 
     Parameters:
-    file_path (str): The path to the GMSH file to be processed.
+    file_path_msh (str): Path to the mesh file.
 
-    The function extracts the points and triangular cells from the mesh and 
-    plots them using matplotlib's triplot function. The plot is displayed 
-    without axis.
+    Returns:
+    tuple: (num_nodes, num_connections_P, num_connections_A)
+        - num_nodes: The total number of unique nodes in the mesh.
+        - num_connections_P: The total number of unique connections in the physical domain.
+        - num_connections_A: The total number of unique connections in the absorbing layer.
     """
     
     # Read the mesh using meshio
-    mesh = meshio.read(file_path)
+    mesh = meshio.read(file_path_msh)
     points = mesh.points 
     cells = mesh.cells
 
     # Extract the triangles from the mesh
-    triangles = cells[10].data
+    triangles_P = cells[10].data  # Connections for physical domain
+    triangles_A = cells[9].data   # Connections for absorbing layer
+
+    # Calculate the number of nodes (unique points)
+    num_nodes = len(points)
+
+    # Calculate the number of connections (unique edges)
+    def count_unique_edges(triangles):
+        edges = set()  # To store unique edges as tuples (sorted to avoid duplicates)
+        for triangle in triangles:
+            # Create all 3 edges of the triangle and sort each edge
+            edges.add(tuple(sorted([triangle[0], triangle[1]])))
+            edges.add(tuple(sorted([triangle[1], triangle[2]])))
+            edges.add(tuple(sorted([triangle[2], triangle[0]])))
+        return len(edges)
+
+    # Count the number of unique edges in physical domain and absorbing layer
+    num_connections_P = count_unique_edges(triangles_P)
+    num_connections_A = count_unique_edges(triangles_A)
+
+    # Print the results (optional)
+    # print(f"Number of nodes: {num_nodes}")
+    # print(f"Number of connections in physical domain: {num_connections_P}")
+    # print(f"Number of connections in absorbing layer: {num_connections_A}")
 
     # Plot the mesh
     plt.figure(figsize=(4, 4))
-    plt.triplot(points[:, 0], points[:, 1], triangles, color='gray', lw=0.4)
+    plt.triplot(points[:, 0], points[:, 1], triangles_P, color='#ccccccff', lw=0.2)
+    plt.triplot(points[:, 0], points[:, 1], triangles_A, color='#b3b3b3ff', lw=0.2)
+
+    # Surface connections (edges for physical and absorbing layers)
+    connections_ri = np.concatenate([cells[i].data for i in range(0, 4)])   
+    connections_re = np.concatenate([cells[i].data for i in range(4, 8)])   
+    start_points_ri = points[connections_ri[:, 0]]
+    end_points_ri = points[connections_ri[:, 1]]
+    start_points_re = points[connections_re[:, 0]]
+    end_points_re = points[connections_re[:, 1]]
+
+    # Plot connections (edges)
+    plt.plot(np.vstack([start_points_ri[:, 0], end_points_ri[:, 0]]), 
+             np.vstack([start_points_ri[:, 1], end_points_ri[:, 1]]), color='#00043eff', lw=0.2)
+    plt.plot(np.vstack([start_points_re[:, 0], end_points_re[:, 0]]), 
+             np.vstack([start_points_re[:, 1], end_points_re[:, 1]]), color='#900008ff', lw=0.2)
+
+    # Final plot adjustments
     plt.axis('off')
     plt.show()
 
-
-def measure_execution_time(getdp_path, command_args, num_runs=10):
-    """
-    Measures the execution time of a command run by the GetDP software.
-
-    Parameters:
-    getdp_path (str): The path to the GetDP executable.
-    command_args (str): The command line arguments to pass to GetDP.
-    num_runs (int, optional): The number of times to run the command for measurement. Default is 10.
-
-    Returns:
-    tuple: A tuple containing the average execution time, standard deviation of the execution time,
-           minimum execution time, and maximum execution time.
-    """
-    def run_getdp():
-        subprocess.run(f"{getdp_path} {command_args}", 
-                       shell=True, 
-                       stdout=subprocess.DEVNULL, 
-                       stderr=subprocess.DEVNULL)
-
-    times = timeit.repeat(run_getdp, repeat=num_runs, number=1)
-    average_time = mean(times)
-    std_dev_time = std(times)
-    min_time = min(times)
-    max_time = max(times)
-
-    return average_time, std_dev_time, min_time, max_time    
-
+    # Return the calculated values
+    return num_nodes, num_connections_P, num_connections_A    
 
 def process_onelab_data(file_path):
     """
@@ -235,7 +280,7 @@ def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, u_amp_fem):
     uscn_amp_fem (numpy.ndarray): Scattered displacement amplitude from FEM.
     u_amp_fem (numpy.ndarray): Total displacement amplitude from FEM.
     """
-    fig, axs = plt.subplots(1, 2, figsize=(8, 6))
+    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
     # Plot the first result
     axs[0].tricontourf(X_fem, Y_fem, elements_fem, uscn_amp_fem, cmap="RdYlBu", levels=100)
@@ -257,3 +302,142 @@ def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, u_amp_fem):
     axs[1].set_aspect('equal', adjustable='box')
     cbar2.set_label("Amplitude $u$")
     plt.show()   # Show the plot
+
+def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid):
+    """
+    Interpolates FEM data onto a regular grid and masks the displacement outside the scatterer.
+
+    Parameters:
+    X_fem (numpy.ndarray): X coordinates of FEM data points.
+    Y_fem (numpy.ndarray): Y coordinates of FEM data points.
+    u_amp_fem (numpy.ndarray): Amplitude of the total displacement from FEM.
+    uscn_amp_fem (numpy.ndarray): Amplitude of the scattered displacement from FEM.
+    r_i (float): Inner radius of the scatterer.
+    r_e (float): Outer radius of the scatterer.
+    n_grid (int): Number of grid points for interpolation.
+
+    Returns:
+    X_grid (numpy.ndarray): X coordinates of the regular grid.
+    Y_grid (numpy.ndarray): Y coordinates of the regular grid.
+    u_amp_interp_fem (numpy.ma.core.MaskedArray): Interpolated and masked total displacement amplitude.
+    uscn_amp_interp_fem (numpy.ma.core.MaskedArray): Interpolated and masked scattered displacement amplitude.
+    """
+    # Scale the data
+    X_fem, Y_fem = X_fem*r_e, Y_fem*r_e
+
+    # Create a regular grid where you want to compare the exact solution
+    x_grid = np.linspace(min(X_fem), max(X_fem), n_grid)
+    y_grid = np.linspace(min(Y_fem), max(Y_fem), n_grid)
+    X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
+
+    # Interpolate onto the grid without NaN values
+    u_amp_interp_fem = griddata((X_fem, Y_fem), u_amp_fem, (X_grid, Y_grid), method='nearest')
+    uscn_amp_interp_fem = griddata((X_fem, Y_fem), uscn_amp_fem, (X_grid, Y_grid), method='nearest')
+
+    # Create R_grid and Theta_grid for the new grid
+    R_grid = np.sqrt(X_grid**2 + Y_grid**2)
+    Theta_grid = np.arctan2(Y_grid, X_grid)
+
+    # Mask the displacement outside the scatterer
+    u_amp_interp_fem = np.ma.masked_where(R_grid < r_i, u_amp_interp_fem)
+    u_amp_interp_fem = np.ma.masked_where(R_grid > r_e, u_amp_interp_fem)
+    uscn_amp_interp_fem = np.ma.masked_where(R_grid < r_i, uscn_amp_interp_fem)
+    uscn_amp_interp_fem = np.ma.masked_where(R_grid > r_e, uscn_amp_interp_fem)
+
+    return X_grid, Y_grid, u_amp_interp_fem, uscn_amp_interp_fem
+
+def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp, r_i, r_e):
+    """
+    Calculate the relative error between the exact and interpolated FEM solutions.
+
+    Parameters:
+    X (numpy.ndarray): X-coordinates of the grid.
+    Y (numpy.ndarray): Y-coordinates of the grid.
+    u_scn_amp_exact (numpy.ma.core.MaskedArray): Exact scattered displacement amplitude.
+    u_amp_exact (numpy.ma.core.MaskedArray): Exact total displacement amplitude.
+    uscn_amp_interp (numpy.ma.core.MaskedArray): Interpolated scattered displacement amplitude from FEM.
+    u_amp_interp (numpy.ma.core.MaskedArray): Interpolated total displacement amplitude from FEM.
+    R_exact (numpy.ndarray): Radial coordinates of the exact solution.
+    r_i (float): Inner radius of the scatterer.
+    r_e (float): Outer radius of the scatterer.
+
+    Returns:
+    tuple: Relative errors for scattered and total displacement amplitudes.
+    """
+    # Create R_grid for the new grid
+    R_grid = np.sqrt(X**2 + Y**2)
+
+    # Mask the displacement outside the scatterer
+    u_scn_amp_exact_data = u_scn_amp_exact.data
+    u_scn_amp_exact_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_amp_exact_data = u_amp_exact.data
+    u_amp_exact_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_amp_interp_data = u_amp_interp.data
+    u_amp_interp_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    uscn_amp_interp_data = uscn_amp_interp.data
+    uscn_amp_interp_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+
+    # Calculate the difference between the interpolated results and the exact results
+    diff_uscn_amp_data, diff_u_amp_data = uscn_amp_interp_data - u_scn_amp_exact_data, u_amp_interp_data - u_amp_exact_data
+    diff_uscn_amp, diff_u_amp = uscn_amp_interp - u_scn_amp_exact, u_amp_interp - u_amp_exact
+
+    # Calculate the L2 norm of the differences
+    norm_diff_uscn = np.linalg.norm(diff_uscn_amp_data, 2)
+    norm_diff_u = np.linalg.norm(diff_u_amp_data, 2)
+
+    # Calculate the L2 norm of the exact solutions
+    norm_u_scn_exact = np.linalg.norm(u_scn_amp_exact_data, 2)
+    norm_u_exact = np.linalg.norm(u_amp_exact_data, 2)
+
+    # Calculate the relative errors using L2 norms
+    rel_error_uscn = norm_diff_uscn / norm_u_scn_exact
+    rel_error_u = norm_diff_u / norm_u_exact
+
+    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+
+    # Plot u_scn_amp
+    c1 = axs[0].pcolormesh(X, Y, diff_uscn_amp, cmap="RdYlBu", vmin=np.min(diff_uscn_amp), vmax=np.max(diff_uscn_amp))
+    cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
+    cb1.set_label("Error $u_{\\text{sct}}$")
+    cb1.set_ticks([np.trunc(np.min(diff_uscn_amp) * 1e+2) / 1e+2, np.trunc(np.max(diff_uscn_amp) * 1e+2) / 1e+2])
+    axs[0].axis("off")
+    axs[0].set_aspect("equal")
+
+    # Plot u_amp
+    c2 = axs[1].pcolormesh(X, Y, diff_u_amp, cmap="RdYlBu", vmin=np.min(diff_u_amp), vmax=np.max(diff_u_amp))
+    cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
+    cb2.set_label("Error $u$")
+    cb2.set_ticks([np.trunc(np.min(diff_u_amp) * 1e+2) / 1e+2, np.trunc(np.max(diff_u_amp) * 1e+2) / 1e+2])
+    axs[1].axis("off")
+    axs[1].set_aspect("equal")
+
+    plt.show()
+
+    return rel_error_uscn, rel_error_u
+
+def measure_execution_time(getdp_path, command_args, num_runs=10):
+    """
+    Measures the execution time of a command run by the GetDP software.
+
+    Parameters:
+    getdp_path (str): The path to the GetDP executable.
+    command_args (str): The command line arguments to pass to GetDP.
+    num_runs (int, optional): The number of times to run the command for measurement. Default is 10.
+
+    Returns:
+    tuple: A tuple containing the average execution time, standard deviation of the execution time,
+           minimum execution time, and maximum execution time.
+    """
+    def run_getdp():
+        subprocess.run(f"{getdp_path} {command_args}", 
+                       shell=True, 
+                       stdout=subprocess.DEVNULL, 
+                       stderr=subprocess.DEVNULL)
+
+    times = timeit.repeat(run_getdp, repeat=num_runs, number=1)
+    average_time = mean(times)
+    std_dev_time = std(times)
+    min_time = min(times)
+    max_time = max(times)
+
+    return average_time, std_dev_time, min_time, max_time    
