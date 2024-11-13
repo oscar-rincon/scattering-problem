@@ -16,8 +16,9 @@ import numpy as np
 from numpy import pi, exp, cos, zeros_like, ma, real, round, min, max, std, mean
 import matplotlib.pyplot as plt
 import gmsh
+import meshio
 
-def u_exact(r, theta, r_i, k):
+def u_exact_calc(r, theta, r_i, k):
     """
     Calculate the exact solution for the scattered and incident waves around a cylinder.
 
@@ -53,95 +54,66 @@ def u_exact(r, theta, r_i, k):
         # Add terms to the total displacement field
         us_inc = us_inc + uin
         us_scn = us_scn + usn 
-    u = us_scn + us_inc    
-    return us_inc, us_scn, u 
+    
+    # Total displacement field
+    u = us_scn + us_inc
+
+    # Extract the amplitude of the displacement
+    u_scn_amp = np.real(us_scn)
+    u_amp = np.real(u)   
+     
+    return u_scn_amp, u_amp 
 
 
-def plot_displacement_amplitude(R, Theta, r_i, u_inc, u_scn, u):
+def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
     """
-    Plots the amplitude of the displacement in polar coordinates for the incident wave, 
-    scattered wave, and total wave.
+    Plot the amplitude of the scattered and total displacement.
 
     Parameters:
-    R (ndarray): Radial coordinates.
-    Theta (ndarray): Angular coordinates.
-    r_i (float): Inner radius to mask out regions where r < r_i.
-    u_inc (ndarray): Incident wave displacement.
-    u_scn (ndarray): Scattered wave displacement.
-    u (ndarray): Total wave displacement.
-
-    Returns:
-    None
+    X (numpy.ndarray): X-coordinates of the grid.
+    Y (numpy.ndarray): Y-coordinates of the grid.
+    u_scn_amp (numpy.ma.core.MaskedArray): Amplitude of the scattered displacement.
+    u_amp (numpy.ma.core.MaskedArray): Amplitude of the total displacement.
     """
-    # Extract the amplitude of the displacement
-    u_inc_amp = real(u_inc)
-    u_scn_amp = real(u_scn)
-    u_amp = real(u)
+    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
-    # Mask out regions where r < 1 (inside the circle with radius 1)
-    u_inc_amp = -ma.masked_where(R < r_i, u_inc_amp)
-    u_scn_amp = -ma.masked_where(R < r_i, u_scn_amp)
-    u_amp = -ma.masked_where(R < r_i, u_amp)
+    # Plot u_scn_amp
+    c1 = axs[0].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
+    cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
+    cb1.set_label("Amplitude $u_{\\text{sct}}$")
+    cb1.set_ticks([np.round(np.min(u_scn_amp), 2), np.round(np.max(u_scn_amp), 2)])
+    axs[0].axis("off")
+    axs[0].set_aspect("equal")
 
-    # Plot the amplitude in polar coordinates
-    plt.figure(figsize=(12, 4))
+    # Plot u_amp
+    c2 = axs[1].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
+    cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
+    cb2.set_label("Amplitude $u$")
+    cb2.set_ticks([np.round(np.min(u_amp), 2), np.round(np.max(u_amp), 2)])
+    axs[1].axis("off")
+    axs[1].set_aspect("equal")
 
-    # Plot the incident wave amplitude in polar coordinates
-    ax3 = plt.subplot(1, 3, 1, projection='polar')
-    c = ax3.pcolormesh(Theta, R, u_inc_amp, cmap="RdYlBu")
-    cb = plt.colorbar(c, ax=ax3, shrink=0.8, orientation="horizontal", pad=0.07)
-    cb.set_label("Amplitude $u_{\\text{inc}}$")
-    ax3.set_xticklabels([])  # Remove radial labels
-    ax3.set_yticklabels([])  # Remove radial labels
-    ax3.grid(False)  # Hide grid lines
-    cb.set_ticks([round(min(u_inc_amp), 2), round(max(u_inc_amp), 2)])
-
-    # Plot the phase (angle of the displacement) in polar coordinates
-    ax2 = plt.subplot(1, 3, 2, projection='polar')
-    c = ax2.pcolormesh(Theta, R, real(u_scn_amp), cmap="RdYlBu")
-    cb = plt.colorbar(c, ax=ax2, shrink=0.8, orientation="horizontal", pad=0.07)
-    cb.set_label("Amplitude $u_{\\text{sct}}$")
-    ax2.set_xticklabels([])  # Remove radial labels
-    ax2.set_yticklabels([])  # Remove radial labels
-    ax2.grid(False)  # Hide grid lines
-    cb.set_ticks([round(min(u_scn_amp), 2), round(max(u_scn_amp), 2)])
-
-    # Plot amplitude (real part of displacement) in polar coordinates
-    ax1 = plt.subplot(1, 3, 3, projection='polar')
-    c = ax1.pcolormesh(Theta, R, u_amp, cmap="RdYlBu")
-    cb = plt.colorbar(c, ax=ax1, shrink=0.8, orientation="horizontal", pad=0.07)
-    cb.set_label("Amplitude $u$")
-    ax1.set_xticklabels([])  # Remove radial labels
-    ax1.set_yticklabels([])  # Remove radial labels
-    cb.set_ticks([round(min(u_amp), 2), round(max(u_amp), 2)])
-    ax1.grid(False)  # Hide grid lines
-
-    # Adjust the aspect ratio
-    plt.gca().set_aspect('equal', adjustable='box')
-
-    # Show the plot
     plt.tight_layout()
     plt.show()
  
 
-def plot_mesh(mesh):
+def plot_mesh(file_path):
     """
     Plots a triangular mesh using matplotlib.
 
     Parameters:
-    mesh (meshio.Mesh): A mesh object containing points and cells.
+    file_path (str): The path to the GMSH file to be processed.
 
     The function extracts the points and triangular cells from the mesh and 
     plots them using matplotlib's triplot function. The plot is displayed 
     without axis.
-
-    Example:
-    >>> import meshio
-    >>> mesh = meshio.read("path_to_mesh_file")
-    >>> plot_mesh(mesh)
     """
+    
+    # Read the mesh using meshio
+    mesh = meshio.read(file_path)
     points = mesh.points 
     cells = mesh.cells
+
     # Extract the triangles from the mesh
     triangles = cells[10].data
 
