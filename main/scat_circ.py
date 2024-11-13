@@ -9,9 +9,10 @@ is the wave scattered by the cylinder. The displacement field is calculated in p
 (r, theta) and plotted in polar coordinates.
 
 """
-
+import subprocess
+import timeit
 from scipy.special import jn, hankel2
-from numpy import pi, exp, cos, zeros_like, ma, real, round, min, max
+from numpy import pi, exp, cos, zeros_like, ma, real, round, min, max, std, mean
 import matplotlib.pyplot as plt
 
 def u_exact(r, theta, r_i, k):
@@ -122,16 +123,56 @@ def plot_displacement_amplitude(R, Theta, r_i, u_inc, u_scn, u):
  
 
 def plot_mesh(mesh):
+    """
+    Plots a triangular mesh using matplotlib.
+
+    Parameters:
+    mesh (meshio.Mesh): A mesh object containing points and cells.
+
+    The function extracts the points and triangular cells from the mesh and 
+    plots them using matplotlib's triplot function. The plot is displayed 
+    without axis.
+
+    Example:
+    >>> import meshio
+    >>> mesh = meshio.read("path_to_mesh_file")
+    >>> plot_mesh(mesh)
+    """
     points = mesh.points 
     cells = mesh.cells
     # Extract the triangles from the mesh
-    triangles = cells[0].data
+    triangles = cells[10].data
 
     # Plot the mesh
-    plt.figure(figsize=(6, 6))
-    plt.triplot(points[:, 0], points[:, 1], triangles, color='gray')
-    
-    #plt.xlabel('$x$ m')
-    #plt.ylabel('$y$ m')
-    # plt.gca().set_aspect('equal', adjustable='box')
+    plt.figure(figsize=(5, 5))
+    plt.triplot(points[:, 0], points[:, 1], triangles, color='gray', lw=0.4)
+    plt.axis('off')
     plt.show()
+
+
+def measure_execution_time(getdp_path, command_args, num_runs=10):
+    """
+    Measures the execution time of a command run by the GetDP software.
+
+    Parameters:
+    getdp_path (str): The path to the GetDP executable.
+    command_args (str): The command line arguments to pass to GetDP.
+    num_runs (int, optional): The number of times to run the command for measurement. Default is 10.
+
+    Returns:
+    tuple: A tuple containing the average execution time, standard deviation of the execution time,
+           minimum execution time, and maximum execution time.
+    """
+    def run_getdp():
+        subprocess.run(f"{getdp_path} {command_args}", 
+                       shell=True, 
+                       stdout=subprocess.DEVNULL, 
+                       stderr=subprocess.DEVNULL)
+
+    times = timeit.repeat(run_getdp, repeat=num_runs, number=1)
+    average_time = mean(times)
+    std_dev_time = std(times)
+    min_time = min(times)
+    max_time = max(times)
+
+    return average_time, std_dev_time, min_time, max_time    

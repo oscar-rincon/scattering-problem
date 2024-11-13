@@ -111,7 +111,7 @@ DefineConstant[
 MENU_PML = "/PML parameters/";
 //size (in number of elements)
 DefineConstant[
-  SizePML_LC = {10., Min 1., Max 1000., Step 0.1,
+  SizePML_LC = {5., Min 1., Max 1000., Step 0.1,
     Name StrCat[MENU_TRUNC, MENU_PML, "2Size (in nb. of elements)"],
     Visible (Type_Truncation == PML)}
 ];
