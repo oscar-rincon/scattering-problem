@@ -17,8 +17,28 @@ from numpy import pi, exp, cos, zeros_like, ma, real, round, min, max, std, mean
 import matplotlib.pyplot as plt
 import gmsh
 import meshio
+import matplotlib as mpl
 from scipy.interpolate import griddata
 
+ # Configuración de LaTeX para matplotlib
+pgf_with_latex = {                      # setup matplotlib to use latex for output
+    "pgf.texsystem": "xelatex",        # change this if using xetex or lautex
+    "text.usetex": False,                # use LaTeX to write all text
+    "font.family": "sans-serif",
+    # "font.serif": [],
+    "font.sans-serif": ["DejaVu Sans"], # specify the sans-serif font
+    "font.monospace": [],
+    "axes.labelsize": 8,               # LaTeX default is 10pt font.
+    "font.size": 10,
+    "legend.fontsize": 8,               # Make the legend/label fonts a little smaller
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+    # "figure.figsize": (3.15, 2.17),     # default fig size of 0.9 textwidth
+    "pgf.preamble": r'\usepackage{amsmath},\usepackage{amsthm},\usepackage{amssymb},\usepackage{mathspec},\renewcommand{\familydefault}{\sfdefault},\usepackage[italic]{mathastext}'
+    #"pgf.preamble": r' \usepackage{amsmath},\usepackage{cmbright},\usepackage[utf8x]{inputenc},\usepackage[T1]{fontenc},\usepackage{amssymb},\usepackage{amsfonts},\usepackage{mathastext}',
+        # plots will be generated using this preamble
+    }
+mpl.rcParams.update(pgf_with_latex)
 
 def u_exact_calc(r, theta, r_i, k, nmax=None):
     """
@@ -105,17 +125,19 @@ def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
     # Plot u_scn_amp
     c1 = axs[0].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
     cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb1.set_label("Amplitude $u_{\\text{sct}}$")
-    #cb1.set_ticks([np.round(np.min(u_scn_amp), 2), np.round(np.max(u_scn_amp), 2)])
+    cb1.set_label(r"Amplitude $u_{\rm{sct}}$")
     cb1.set_ticks([np.trunc(np.min(u_scn_amp) * 1e+2) / 1e+2, np.trunc(np.max(u_scn_amp) * 1e+2) / 1e+2])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * 1e+2) / 1e+2):.2f}', f'{(np.trunc(np.max(u_scn_amp) * 1e+2) / 1e+2):.2f}'])
+    
     axs[0].axis("off")
     axs[0].set_aspect("equal")
 
     # Plot u_amp
     c2 = axs[1].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
     cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb2.set_label("Amplitude $u$")
+    cb2.set_label(r"Amplitude $u$")
     cb2.set_ticks([np.trunc(np.min(u_amp) * 1e+2) / 1e+2, np.trunc(np.max(u_amp) * 1e+2) / 1e+2])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(u_amp) * 1e+2) / 1e+2):.2f}', f'{(np.trunc(np.max(u_amp) * 1e+2) / 1e+2):.2f}'])
     axs[1].axis("off")
     axs[1].set_aspect("equal")
 
@@ -173,8 +195,8 @@ def plot_mesh_from_file(file_path_msh):
 
     # Plot the mesh
     plt.figure(figsize=(4, 4))
-    plt.triplot(points[:, 0], points[:, 1], triangles_P, color='#ccccccff', lw=0.2)
-    plt.triplot(points[:, 0], points[:, 1], triangles_A, color='#b3b3b3ff', lw=0.2)
+    plt.triplot(points[:, 0], points[:, 1], triangles_P, color='#cbcbcbff', lw=0.3)
+    plt.triplot(points[:, 0], points[:, 1], triangles_A, color='#989898ff', lw=0.3)
 
     # Surface connections (edges for physical and absorbing layers)
     connections_ri = np.concatenate([cells[i].data for i in range(0, 4)])   
@@ -186,9 +208,9 @@ def plot_mesh_from_file(file_path_msh):
 
     # Plot connections (edges)
     plt.plot(np.vstack([start_points_ri[:, 0], end_points_ri[:, 0]]), 
-             np.vstack([start_points_ri[:, 1], end_points_ri[:, 1]]), color='#00043eff', lw=0.2)
+             np.vstack([start_points_ri[:, 1], end_points_ri[:, 1]]), color='#000146ff', lw=0.3)
     plt.plot(np.vstack([start_points_re[:, 0], end_points_re[:, 0]]), 
-             np.vstack([start_points_re[:, 1], end_points_re[:, 1]]), color='#900008ff', lw=0.2)
+             np.vstack([start_points_re[:, 1], end_points_re[:, 1]]), color='#003e23ff', lw=0.3)
 
     # Final plot adjustments
     plt.axis('off')
@@ -289,7 +311,7 @@ def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, u_amp_fem):
     cbar1 = plt.colorbar(axs[0].collections[0], ax=axs[0], shrink=0.9, orientation="horizontal", pad=0.07)
     cbar1.set_ticks([uscn_amp_fem.min(), uscn_amp_fem.max()])
     cbar1.set_ticklabels([f'{uscn_amp_fem.min():.2f}', f'{uscn_amp_fem.max():.2f}'])
-    cbar1.set_label("Amplitude $u_{\\text{sct}}$")
+    cbar1.set_label(r"Amplitude $u_{\rm{sct}}$")
     axs[0].set_aspect('equal', adjustable='box')
 
     # Plot the second result
@@ -300,8 +322,8 @@ def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, u_amp_fem):
     cbar2.set_ticks([u_amp_fem.min(), u_amp_fem.max()])
     cbar2.set_ticklabels([f'{u_amp_fem.min():.2f}', f'{u_amp_fem.max():.2f}'])
     axs[1].set_aspect('equal', adjustable='box')
-    cbar2.set_label("Amplitude $u$")
-    plt.show()   # Show the plot
+    cbar2.set_label(r"Amplitude $u$")
+    plt.show()    
 
 def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid):
     """
@@ -398,7 +420,7 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
     # Plot u_scn_amp
     c1 = axs[0].pcolormesh(X, Y, diff_uscn_amp, cmap="RdYlBu", vmin=np.min(diff_uscn_amp), vmax=np.max(diff_uscn_amp))
     cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb1.set_label("Error $u_{\\text{sct}}$")
+    cb1.set_label(r"Error $u_{\rm{sct}}$")
     cb1.set_ticks([np.trunc(np.min(diff_uscn_amp) * 1e+2) / 1e+2, np.trunc(np.max(diff_uscn_amp) * 1e+2) / 1e+2])
     axs[0].axis("off")
     axs[0].set_aspect("equal")
@@ -406,7 +428,7 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
     # Plot u_amp
     c2 = axs[1].pcolormesh(X, Y, diff_u_amp, cmap="RdYlBu", vmin=np.min(diff_u_amp), vmax=np.max(diff_u_amp))
     cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb2.set_label("Error $u$")
+    cb2.set_label(r"Error $u$")
     cb2.set_ticks([np.trunc(np.min(diff_u_amp) * 1e+2) / 1e+2, np.trunc(np.max(diff_u_amp) * 1e+2) / 1e+2])
     axs[1].axis("off")
     axs[1].set_aspect("equal")
