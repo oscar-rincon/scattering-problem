@@ -12,7 +12,7 @@ MENU_INPUT = "Input";
 DefineConstant[
   k = {10, Min 0.1, Step 0.1, Max 50,
     Name StrCat[MENU_INPUT, "/2Wavenumber"]}
-  n_lc = {20, Min 1, Step 0.1, Max 100,
+  n_lc = {30, Min 1, Step 0.1, Max 100,
     Name StrCat[MENU_INPUT,"/3Number of points per wavelength"]}
 ];
 lambda = 2*Pi/k;

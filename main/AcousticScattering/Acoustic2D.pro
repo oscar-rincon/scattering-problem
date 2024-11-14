@@ -293,12 +293,12 @@ Resolution{
 PostProcessing{
   {Name Wave; NameOfFormulation Helmholtz;
     Quantity {
-      {Name u; Value {Local { [{u}] ; In OmegaTotal; Jacobian JVol; }}}
-      {Name uNorm; Value {Local { [Norm[{u}]] ; In OmegaTotal; Jacobian JVol; }}}
+      {Name u; Value {Local { [-{u}] ; In OmegaTotal; Jacobian JVol; }}}
+      {Name uNorm; Value {Local { [Norm[-{u}]] ; In OmegaTotal; Jacobian JVol; }}}
       {Name uinc; Value {Local { [uinc[]] ; In OmegaTotal; Jacobian JVol; }}}
       //total field
-      {Name ut; Value {Local { [{u} + uinc[]] ; In OmegaTotal; Jacobian JVol; }}}
-      {Name utNorm; Value {Local { [Norm[{u} + uinc[]]] ; In OmegaTotal; Jacobian JVol; }}}
+      {Name ut; Value {Local { [-{u} + uinc[]] ; In OmegaTotal; Jacobian JVol; }}}
+      {Name utNorm; Value {Local { [Norm[-{u} + uinc[]]] ; In OmegaTotal; Jacobian JVol; }}}
       //first and second trace on gamma
       { Name ugama ; Value { Local { [ {u} ] ; In GammaScat; Jacobian JSur ; } } }
       {Name dn_u ; Value { Local { [ {dn_u} ] ; In GammaD; Jacobian JSur ; } } }

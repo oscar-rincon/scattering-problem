@@ -35,8 +35,6 @@ pgf_with_latex = {                      # setup matplotlib to use latex for outp
     "ytick.labelsize": 8,
     # "figure.figsize": (3.15, 2.17),     # default fig size of 0.9 textwidth
     "pgf.preamble": r'\usepackage{amsmath},\usepackage{amsthm},\usepackage{amssymb},\usepackage{mathspec},\renewcommand{\familydefault}{\sfdefault},\usepackage[italic]{mathastext}'
-    #"pgf.preamble": r' \usepackage{amsmath},\usepackage{cmbright},\usepackage[utf8x]{inputenc},\usepackage[T1]{fontenc},\usepackage{amssymb},\usepackage{amsfonts},\usepackage{mathastext}',
-        # plots will be generated using this preamble
     }
 mpl.rcParams.update(pgf_with_latex)
 
@@ -73,8 +71,8 @@ def u_exact_calc(r, theta, r_i, k, nmax=None):
                                      (hankel2(n + 1, k*r_i) - hankel2(n - 1, k*r_i)))
             en = 2.0
         # Sum terms for both scattered and incident waves
-        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) * exp(1.0j*pi) 
-        uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta) #* exp(1.0j*pi) 
+        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) #* exp(1.0j*pi)  # REVISAR
+        uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta)   
 
         # Add terms to the total displacement field
         us_inc = us_inc + uin
@@ -429,7 +427,8 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
     c2 = axs[1].pcolormesh(X, Y, diff_u_amp, cmap="RdYlBu", vmin=np.min(diff_u_amp), vmax=np.max(diff_u_amp))
     cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
     cb2.set_label(r"Error $u$")
-    cb2.set_ticks([np.trunc(np.min(diff_u_amp) * 1e+2) / 1e+2, np.trunc(np.max(diff_u_amp) * 1e+2) / 1e+2])
+    cb2.set_ticks([(np.trunc(np.min(diff_u_amp) * 1e+2) / 1e+2), (np.trunc(np.max(diff_u_amp) * 1e+2) / 1e+2)])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(diff_u_amp) * 1e+2) / 1e+2):.2f}', f'{(np.trunc(np.max(diff_u_amp) * 1e+2) / 1e+2):.2f}'])
     axs[1].axis("off")
     axs[1].set_aspect("equal")
 
