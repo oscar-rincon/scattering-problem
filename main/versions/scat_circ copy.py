@@ -71,7 +71,7 @@ def u_exact_calc_for_pinns(r, theta, r_i, k, nmax=None):
                                      (hankel2(n + 1, k*r_i) - hankel2(n - 1, k*r_i)))
             en = 2.0
         # Sum terms for both scattered and incident waves
-        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) #* exp(1.0j*pi)  # REVISAR
+        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) * exp(1.0j*pi)  # REVISAR
         uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta)   
 
         # Add terms to the total displacement field
@@ -120,7 +120,7 @@ def u_exact_calc(r, theta, r_i, k, nmax=None):
                                      (hankel2(n + 1, k*r_i) - hankel2(n - 1, k*r_i)))
             en = 2.0
         # Sum terms for both scattered and incident waves
-        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) #* exp(1.0j*pi)  # REVISAR
+        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) * exp(1.0j*pi)  # REVISAR
         uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta)   
 
         # Add terms to the total displacement field
@@ -409,9 +409,9 @@ def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid
 
     # Mask the displacement outside the scatterer
     u_amp_interp_fem = np.ma.masked_where(R_grid < r_i, u_amp_interp_fem)
-    u_amp_interp_fem = np.ma.masked_where(R_grid > r_e, u_amp_interp_fem)
+    #u_amp_interp_fem = np.ma.masked_where(R_grid > r_e, u_amp_interp_fem)
     uscn_amp_interp_fem = np.ma.masked_where(R_grid < r_i, uscn_amp_interp_fem)
-    uscn_amp_interp_fem = np.ma.masked_where(R_grid > r_e, uscn_amp_interp_fem)
+    #uscn_amp_interp_fem = np.ma.masked_where(R_grid > r_e, uscn_amp_interp_fem)
 
     return X_grid, Y_grid, u_amp_interp_fem, uscn_amp_interp_fem
 
@@ -438,13 +438,13 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
 
     # Mask the displacement outside the scatterer
     u_scn_amp_exact_data = u_scn_amp_exact.data
-    u_scn_amp_exact_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_scn_amp_exact_data[(R_grid < r_i)] = 0
     u_amp_exact_data = u_amp_exact.data
-    u_amp_exact_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_amp_exact_data[(R_grid < r_i)] = 0
     u_amp_interp_data = u_amp_interp.data
-    u_amp_interp_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_amp_interp_data[(R_grid < r_i)] = 0
     uscn_amp_interp_data = uscn_amp_interp.data
-    uscn_amp_interp_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    uscn_amp_interp_data[(R_grid < r_i)] = 0
 
     # Calculate the difference between the interpolated results and the exact results
     diff_uscn_amp_data, diff_u_amp_data = uscn_amp_interp_data - u_scn_amp_exact_data, u_amp_interp_data - u_amp_exact_data

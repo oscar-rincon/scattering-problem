@@ -10,9 +10,9 @@ DefineConstant[
 //Frequency
 MENU_INPUT = "Input";
 DefineConstant[
-  k = {10, Min 0.1, Step 0.1, Max 50,
+  k = {3, Min 0.1, Step 0.1, Max 50,
     Name StrCat[MENU_INPUT, "/2Wavenumber"]}
-  n_lc = {30, Min 1, Step 0.1, Max 100,
+  n_lc = {40, Min 1, Step 0.1, Max 100,
     Name StrCat[MENU_INPUT,"/3Number of points per wavelength"]}
 ];
 lambda = 2*Pi/k;
@@ -45,7 +45,7 @@ MENU_DOM = "/4Computational Domain/";
 DOM_SQUARE = 0;
 DOM_CIRCULAR = 1;
 DefineConstant[
-  Type_SHAPE_PML = {DOM_CIRCULAR,
+  Type_SHAPE_PML = {DOM_SQUARE,
     Choices{DOM_SQUARE ="Rectangular", DOM_CIRCULAR="Circular"},
     Name StrCat[MENU_TRUNC, MENU_DOM, "20Shape"],
     Visible (Type_Truncation == PML)}
@@ -77,7 +77,7 @@ DefineConstant[
   linkLS = {(Type_Truncation == PML && Type_SHAPE == DOM_CIRCULAR),
     Choices {0,1}, Name StrCat[MENU_TRUNC, MENU_DOM, "4Set Xmax=Ymax"],
     ReadOnly (Type_Truncation == PML && Type_SHAPE == DOM_CIRCULAR)}
-  Xmax = {1.0, Min 0.1, Step 0.1, Max 10000,
+  Xmax = {3.14159, Min 0.1, Step 0.1, Max 10000,
     Name StrCat[MENU_TRUNC, MENU_DOM, "4Xmax"], Label Str[Axis_string_x]}
   Ymax = {Xmax, Min 0.1, Step 0.1, Max 10000,
     Name StrCat[MENU_TRUNC, MENU_DOM, "4Ymax"], Label Str[Axis_string_y],
@@ -111,7 +111,7 @@ DefineConstant[
 MENU_PML = "/PML parameters/";
 //size (in number of elements)
 DefineConstant[
-  SizePML_LC = {5., Min 1., Max 1000., Step 0.1,
+  SizePML_LC = {10., Min 1., Max 1000., Step 0.1,
     Name StrCat[MENU_TRUNC, MENU_PML, "2Size (in nb. of elements)"],
     Visible (Type_Truncation == PML)}
 ];

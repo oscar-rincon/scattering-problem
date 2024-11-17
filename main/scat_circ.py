@@ -11,7 +11,7 @@ is the wave scattered by the cylinder. The displacement field is calculated in p
 """
 import subprocess
 import timeit
-from scipy.special import jn, hankel2
+from scipy.special import hankel1,jv
 import numpy as np
 from numpy import pi, exp, cos, zeros_like, ma, real, round, min, max, std, mean
 import matplotlib.pyplot as plt
@@ -38,103 +38,50 @@ pgf_with_latex = {                      # setup matplotlib to use latex for outp
     }
 mpl.rcParams.update(pgf_with_latex)
 
-def u_exact_calc_for_pinns(r, theta, r_i, k, nmax=None):
+# Function to compute the exact solution
+def sound_hard_circle_calc(k0, a, X, Y, n_terms=None):
     """
-    Calculate the exact solution for the scattered and incident waves around a cylinder.
+    Calculate the scattered and total sound field for a sound-hard circular obstacle.
 
     Parameters:
-    r (ndarray): Radial coordinates where the solution is evaluated.
-    theta (ndarray): Angular coordinates where the solution is evaluated.
-    r_i (float): Radius of the cylinder.
-    k (float): Wave number.
+    -----------
+    k0 : float
+        Wave number of the incident wave.
+    a : float
+        Radius of the circular obstacle.
+    X : ndarray
+        X-coordinates of the grid points where the field is calculated.
+    Y : ndarray
+        Y-coordinates of the grid points where the field is calculated.
+    n_terms : int, optional
+        Number of terms in the series expansion. If None, it is calculated based on k0 and a.
 
     Returns:
-    tuple: A tuple containing:
-        - us_inc (ndarray): Incident wave field.
-        - us_scn (ndarray): Scattered wave field.
-        - u (ndarray): Total wave field (incident + scattered).
+    --------
+    u_sc : ndarray
+        Scattered sound field at the grid points.
+    u : ndarray
+        Total sound field (incident + scattered) at the grid points.
     """
-    us_scn = zeros_like(r, dtype=complex)  # Initialize scattered wave
-    us_inc = zeros_like(r, dtype=complex)  # Initialize scattered wave
+    points = np.column_stack((X.ravel(), Y.ravel()))
+    fem_xx = points[:, 0:1]
+    fem_xy = points[:, 1:2]
+    r = np.sqrt(fem_xx * fem_xx + fem_xy * fem_xy)
+    theta = np.arctan2(fem_xy, fem_xx)
+    npts = np.size(fem_xx, 0)
+    if n_terms is None:
+        n_terms = int(30 + (k0 * a)**1.01)
+    u_sc = np.zeros((npts), dtype=np.complex128)
+    for n in range(-n_terms, n_terms):
+        bessel_deriv = jv(n-1, k0*a) - n/(k0*a) * jv(n, k0*a)
+        hankel_deriv = n/(k0*a)*hankel1(n, k0*a) - hankel1(n+1, k0*a)
+        u_sc += (-(1j)**(n) * (bessel_deriv/hankel_deriv) * hankel1(n, k0*r) * \
+            np.exp(1j*n*theta)).ravel()
+    u_sc = np.reshape(u_sc, X.shape)
+    us_inc = np.exp(1j*k0*X)
+    u = us_inc + u_sc
+    return u_sc, u
 
-    if nmax is None:
-        nmax = int(30 + (k * r_i)**1.01)
-    
-    for n in range(nmax, -1, -1):
-        if n == 0:
-            # Coefficient for n = 0
-            an = -jn(1, k*r_i) / hankel2(1, k*r_i)
-            en = 1.0
-        else:
-            # Coefficients for n > 0
-            an = -2.0 * (1.0)**n * ((jn(n + 1, k*r_i) - jn(n - 1, k*r_i)) /
-                                     (hankel2(n + 1, k*r_i) - hankel2(n - 1, k*r_i)))
-            en = 2.0
-        # Sum terms for both scattered and incident waves
-        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) #* exp(1.0j*pi)  # REVISAR
-        uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta)   
-
-        # Add terms to the total displacement field
-        us_inc = us_inc + uin
-        us_scn = us_scn + usn 
-    
-    # Total displacement field
-    u = us_scn + us_inc
-
-    # Extract the amplitude of the displacement
-    #u_scn_amp = np.real(us_scn)
-    #u_amp = np.real(u)   
-    
-    return us_scn, u 
-
-def u_exact_calc(r, theta, r_i, k, nmax=None):
-    """
-    Calculate the exact solution for the scattered and incident waves around a cylinder.
-
-    Parameters:
-    r (ndarray): Radial coordinates where the solution is evaluated.
-    theta (ndarray): Angular coordinates where the solution is evaluated.
-    r_i (float): Radius of the cylinder.
-    k (float): Wave number.
-
-    Returns:
-    tuple: A tuple containing:
-        - us_inc (ndarray): Incident wave field.
-        - us_scn (ndarray): Scattered wave field.
-        - u (ndarray): Total wave field (incident + scattered).
-    """
-    us_scn = zeros_like(r, dtype=complex)  # Initialize scattered wave
-    us_inc = zeros_like(r, dtype=complex)  # Initialize scattered wave
-
-    if nmax is None:
-        nmax = int(30 + (k * r_i)**1.01)
-    
-    for n in range(nmax, -1, -1):
-        if n == 0:
-            # Coefficient for n = 0
-            an = -jn(1, k*r_i) / hankel2(1, k*r_i)
-            en = 1.0
-        else:
-            # Coefficients for n > 0
-            an = -2.0 * (1.0)**n * ((jn(n + 1, k*r_i) - jn(n - 1, k*r_i)) /
-                                     (hankel2(n + 1, k*r_i) - hankel2(n - 1, k*r_i)))
-            en = 2.0
-        # Sum terms for both scattered and incident waves
-        usn = an * 1.0j**n * hankel2(n, k*r) * cos(n*theta) #* exp(1.0j*pi)  # REVISAR
-        uin = en * 1.0j**n * jn(n, -k*r) * cos(n*theta)   
-
-        # Add terms to the total displacement field
-        us_inc = us_inc + uin
-        us_scn = us_scn + usn 
-    
-    # Total displacement field
-    u = us_scn + us_inc
-
-    # Extract the amplitude of the displacement
-    u_scn_amp = np.real(us_scn)
-    u_amp = np.real(u)   
-    
-    return u_scn_amp, u_amp 
 
 def mask_displacement(R_exact, r_i, r_e, u_amp_exact, u_scn_amp_exact):
     """
@@ -152,9 +99,9 @@ def mask_displacement(R_exact, r_i, r_e, u_amp_exact, u_scn_amp_exact):
     u_scn_amp_exact (numpy.ma.core.MaskedArray): Masked exact scattered displacement amplitude.
     """
     u_amp_exact = np.ma.masked_where(R_exact < r_i, u_amp_exact)
-    u_amp_exact = np.ma.masked_where(R_exact > r_e, u_amp_exact)
+    #u_amp_exact = np.ma.masked_where(R_exact > r_e, u_amp_exact)
     u_scn_amp_exact = np.ma.masked_where(R_exact < r_i, u_scn_amp_exact)
-    u_scn_amp_exact = np.ma.masked_where(R_exact > r_e, u_scn_amp_exact)
+    #u_scn_amp_exact = np.ma.masked_where(R_exact > r_e, u_scn_amp_exact)
     return u_amp_exact, u_scn_amp_exact
 
 def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
@@ -191,7 +138,6 @@ def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
     #plt.tight_layout()
     plt.show()
  
-
 
 def plot_mesh_from_file(file_path_msh):
     """
@@ -400,8 +346,8 @@ def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid
     X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
 
     # Interpolate onto the grid without NaN values
-    u_amp_interp_fem = griddata((X_fem, Y_fem), u_amp_fem, (X_grid, Y_grid), method='nearest')
-    uscn_amp_interp_fem = griddata((X_fem, Y_fem), uscn_amp_fem, (X_grid, Y_grid), method='nearest')
+    u_amp_interp_fem = griddata((X_fem, Y_fem), u_amp_fem, (X_grid, Y_grid), method='cubic')
+    uscn_amp_interp_fem = griddata((X_fem, Y_fem), uscn_amp_fem, (X_grid, Y_grid), method='cubic')
 
     # Create R_grid and Theta_grid for the new grid
     R_grid = np.sqrt(X_grid**2 + Y_grid**2)
@@ -409,9 +355,9 @@ def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid
 
     # Mask the displacement outside the scatterer
     u_amp_interp_fem = np.ma.masked_where(R_grid < r_i, u_amp_interp_fem)
-    u_amp_interp_fem = np.ma.masked_where(R_grid > r_e, u_amp_interp_fem)
+    #u_amp_interp_fem = np.ma.masked_where(R_grid > r_e, u_amp_interp_fem)
     uscn_amp_interp_fem = np.ma.masked_where(R_grid < r_i, uscn_amp_interp_fem)
-    uscn_amp_interp_fem = np.ma.masked_where(R_grid > r_e, uscn_amp_interp_fem)
+    #uscn_amp_interp_fem = np.ma.masked_where(R_grid > r_e, uscn_amp_interp_fem)
 
     return X_grid, Y_grid, u_amp_interp_fem, uscn_amp_interp_fem
 
@@ -438,13 +384,13 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
 
     # Mask the displacement outside the scatterer
     u_scn_amp_exact_data = u_scn_amp_exact.data
-    u_scn_amp_exact_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_scn_amp_exact_data[(R_grid < r_i)] = 0
     u_amp_exact_data = u_amp_exact.data
-    u_amp_exact_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_amp_exact_data[(R_grid < r_i)] = 0
     u_amp_interp_data = u_amp_interp.data
-    u_amp_interp_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    u_amp_interp_data[(R_grid < r_i)] = 0
     uscn_amp_interp_data = uscn_amp_interp.data
-    uscn_amp_interp_data[(R_grid < r_i) | (R_grid > r_e)] = 0
+    uscn_amp_interp_data[(R_grid < r_i)] = 0
 
     # Calculate the difference between the interpolated results and the exact results
     diff_uscn_amp_data, diff_u_amp_data = uscn_amp_interp_data - u_scn_amp_exact_data, u_amp_interp_data - u_amp_exact_data
@@ -465,19 +411,22 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
     fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
     # Plot u_scn_amp
+    order = 1e+4
     c1 = axs[0].pcolormesh(X, Y, diff_uscn_amp, cmap="RdYlBu", vmin=np.min(diff_uscn_amp), vmax=np.max(diff_uscn_amp))
     cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
     cb1.set_label(r"Error $u_{\rm{sct}}$")
-    cb1.set_ticks([np.trunc(np.min(diff_uscn_amp) * 1e+2) / 1e+2, np.trunc(np.max(diff_uscn_amp) * 1e+2) / 1e+2])
+    cb1.set_ticks([np.trunc(np.min(diff_uscn_amp) *order) / order, np.trunc(np.max(diff_uscn_amp) * order) /order])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(diff_uscn_amp) * order) / order)}', f'{(np.trunc(np.max(diff_uscn_amp) * order) / order)}']) 
     axs[0].axis("off")
     axs[0].set_aspect("equal")
 
     # Plot u_amp
+    
     c2 = axs[1].pcolormesh(X, Y, diff_u_amp, cmap="RdYlBu", vmin=np.min(diff_u_amp), vmax=np.max(diff_u_amp))
     cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
     cb2.set_label(r"Error $u$")
-    cb2.set_ticks([(np.trunc(np.min(diff_u_amp) * 1e+2) / 1e+2), (np.trunc(np.max(diff_u_amp) * 1e+2) / 1e+2)])
-    cb2.set_ticklabels([f'{(np.trunc(np.min(diff_u_amp) * 1e+2) / 1e+2):.2f}', f'{(np.trunc(np.max(diff_u_amp) * 1e+2) / 1e+2):.2f}'])
+    cb2.set_ticks([(np.trunc(np.min(diff_u_amp) * order) / order), (np.trunc(np.max(diff_u_amp) * order) / order)])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(diff_u_amp) * order) / order)}', f'{(np.trunc(np.max(diff_u_amp) *order) /order)}'])
     axs[1].axis("off")
     axs[1].set_aspect("equal")
 

@@ -66,10 +66,10 @@ For ns In {0:NMAX-1}
   //init this constant
   _ItsOK~{ns} = 1;
   DefineConstant[
-    rx~{ns}={0.1, Min 0.1, Max Xmax, Step 0.1,
+    rx~{ns}={0.7853981633974483, Min 0.1, Max Xmax, Step 0.1,
       Name StrCat[MENU_OBST, Sprintf("/Obst. %g/2X-radius", ns+1)],
       Visible (ns < N_scat_to_create)}
-    ry~{ns}={0.1, Min 0.1, Max Ymax, Step 0.1,
+    ry~{ns}={0.7853981633974483, Min 0.1, Max Ymax, Step 0.1,
       Name StrCat[MENU_OBST, Sprintf("/Obst. %g/2Y-radius", ns+1)],
       Visible (ns < N_scat_to_create)}
     x~{ns}={ns * 2.2*ry~{ns}, Min -Xmax, Max Xmax, Step 0.1,
