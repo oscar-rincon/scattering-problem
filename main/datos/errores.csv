@@ -1,0 +1,3 @@
+Método,Error Relativo u_scn (Amp),Error Relativo u (Phase),Max Diff u_scn (Amp),Min Diff u_scn (Amp),Max Diff u (Phase),Min Diff u (Phase)
+FEM,4.42e-03,2.29e-03,3.67e-03,-3.79e-03,2.35e-03,-2.44e-03
+PINNs,7.51e-02,7.49e-02,7.23e-02,-4.73e-02,5.17e-02,-8.36e-02

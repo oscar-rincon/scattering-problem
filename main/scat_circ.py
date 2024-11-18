@@ -114,84 +114,76 @@ def plot_exact_displacement(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_sc
     u (numpy.ndarray): Total displacement field.
     """
 
-    # Downsample the data to reduce resolution
-    # factor = 3  # Downsample by a factor of 4 (you can adjust this)
-    # X = X[::factor, ::factor]
-    # Y = Y[::factor, ::factor]
-    # u_inc_amp = u_inc_amp[::factor, ::factor]
-    # u_scn_amp = u_scn_amp[::factor, ::factor]
-    # u_amp = u_amp[::factor, ::factor]
-    # u_inc_phase = u_inc_phase[::factor, ::factor]
-    # u_scn_phase = u_scn_phase[::factor, ::factor]
-    # u_phase = u_phase[::factor, ::factor]
-
     fig, axs = plt.subplots(2, 3, figsize=(6.5, 3.5))
     decimales = 1e+4  # Number of decimals for the color bar
     shrink = 0.5  # Shrink factor for the color bar
 
     # Amplitude of the incident wave
-    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu")
-    cb1 = fig.colorbar(c1, ax=axs[0, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu", rasterized=True)
+    cb1 = fig.colorbar(c1, ax=axs[0, 0], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb1.set_label(r"$u_{\rm{inc}}$")
     cb1.set_ticks([np.trunc(np.min(u_inc_amp) * decimales) / decimales, np.trunc(np.max(u_inc_amp) * decimales) / decimales])
-    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales):.4f}'])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 0].axis("off")
     axs[0, 0].set_aspect("equal")
 
     # Amplitude of the scattered wave
-    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
-    cb2 = fig.colorbar(c2, ax=axs[0, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu", rasterized=True)
+    cb2 = fig.colorbar(c2, ax=axs[0, 1], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb2.set_label(r"$u_{\rm{sct}}$")
     cb2.set_ticks([np.trunc(np.min(u_scn_amp) * decimales) / decimales, np.trunc(np.max(u_scn_amp) * decimales) / decimales])
-    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales):.4f}'])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 1].axis("off")
     axs[0, 1].set_aspect("equal")
 
     # Amplitude of the total wave
-    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
-    cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu", rasterized=True)
+    cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb3.set_label(r"$u$")
     cb3.set_ticks([np.trunc(np.min(u_amp) * decimales) / decimales, np.trunc(np.max(u_amp) * decimales) / decimales])
-    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales):.4f}'])
+    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 2].axis("off")
     axs[0, 2].set_aspect("equal")
 
     # Phase of the incident wave
-    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu")
-    cb4 = fig.colorbar(c4, ax=axs[1, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu", rasterized=True)
+    cb4 = fig.colorbar(c4, ax=axs[1, 0], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb4.set_label(r"$u_{\rm{inc}}$")
     cb4.set_ticks([np.trunc(np.min(u_inc_phase) * decimales) / decimales, np.trunc(np.max(u_inc_phase) * decimales) / decimales])
-    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales):.4f}'])
+    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 0].axis("off")
     axs[1, 0].set_aspect("equal")
 
     # Phase of the scattered wave
-    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu")
-    cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu", rasterized=True)
+    cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb5.set_label(r"$u_{\rm{sct}}$")
     cb5.set_ticks([np.trunc(np.min(u_scn_phase) * decimales) / decimales, np.trunc(np.max(u_scn_phase) * decimales) / decimales])
-    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales):.4f}'])
+    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 1].axis("off")
     axs[1, 1].set_aspect("equal")
 
     # Phase of the total wave
-    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu")
-    cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu", rasterized=True)
+    cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb6.set_label(r"$u$")
     cb6.set_ticks([np.trunc(np.min(u_phase) * decimales) / decimales, np.trunc(np.max(u_phase) * decimales) / decimales])
-    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales):.4f}'])
+    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 2].axis("off")
     axs[1, 2].set_aspect("equal")
 
     # Add rotated labels "Amplitude" and "Phase"
     fig.text(0.05, 0.80, r'Exact - Amplitude', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
     fig.text(0.05, 0.30, r'Exact - Phase', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
-    
+
+    # Adjust space between rows (increase 'hspace' for more space between rows)
+    plt.subplots_adjust(hspace=1.1)  # You can tweak this value (e.g., 0.5, 0.6) as needed
+
     # Tight layout
     plt.tight_layout()
 
     # Save the figure
-    plt.savefig("figs/displacement_exact.png", dpi=300)
+    plt.savefig("figs/displacement_exact.pdf", dpi=300, bbox_inches='tight')
 
  
 
@@ -212,56 +204,56 @@ def plot_fem_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn
     shrink = 0.5  # Shrink factor for the color bar
 
     # Amplitude of the incident wave
-    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu")
+    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu", rasterized=True)
     cb1 = fig.colorbar(c1, ax=axs[0, 0], shrink=shrink, orientation="horizontal", pad=0.07)
     cb1.set_label(r"$u_{\rm{sct}}$")
     cb1.set_ticks([np.trunc(np.min(u_inc_amp) * decimales) / decimales, np.trunc(np.max(u_inc_amp) * decimales) / decimales])
-    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales):.4f}'])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 0].axis("off")
     axs[0, 0].set_aspect("equal")
 
     # Amplitude of the scattered wave
-    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
+    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu", rasterized=True)
     cb2 = fig.colorbar(c2, ax=axs[0, 1], shrink=shrink, orientation="horizontal", pad=0.07)
     cb2.set_label(r"$u$")
     cb2.set_ticks([np.trunc(np.min(u_scn_amp) * decimales) / decimales, np.trunc(np.max(u_scn_amp) * decimales) / decimales])
-    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales):.4f}'])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 1].axis("off")
     axs[0, 1].set_aspect("equal")
 
     # Amplitude of the total wave
-    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
+    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu", rasterized=True)
     cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07)
     cb3.set_label(r"Error")
     cb3.set_ticks([np.trunc(np.min(u_amp) * decimales) / decimales, np.trunc(np.max(u_amp) * decimales) / decimales])
-    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales):.4f}'])
+    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 2].axis("off")
     axs[0, 2].set_aspect("equal")
 
     # Phase of the incident wave
-    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu")
+    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu", rasterized=True)
     cb4 = fig.colorbar(c4, ax=axs[1, 0], shrink=shrink, orientation="horizontal", pad=0.07)
     cb4.set_label(r"$u_{\rm{sct}}$")
     cb4.set_ticks([np.trunc(np.min(u_inc_phase) * decimales) / decimales, np.trunc(np.max(u_inc_phase) * decimales) / decimales])
-    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales):.4f}'])
+    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 0].axis("off")
     axs[1, 0].set_aspect("equal")
 
     # Phase of the scattered wave
-    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu")
+    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu", rasterized=True)
     cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07)
     cb5.set_label(r"$u$")
     cb5.set_ticks([np.trunc(np.min(u_scn_phase) * decimales) / decimales, np.trunc(np.max(u_scn_phase) * decimales) / decimales])
-    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales):.4f}'])
+    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 1].axis("off")
     axs[1, 1].set_aspect("equal")
 
     # Phase of the total wave
-    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu")
+    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu", rasterized=True)
     cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07)
     cb6.set_label(r"Error")
     cb6.set_ticks([np.trunc(np.min(u_phase) * decimales) / decimales, np.trunc(np.max(u_phase) * decimales) / decimales])
-    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales):.4f}'])
+    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 2].axis("off")
     axs[1, 2].set_aspect("equal")
 
@@ -269,11 +261,15 @@ def plot_fem_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn
     fig.text(0.05, 0.80, r'FEM - Amplitude', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
     fig.text(0.05, 0.30, r'FEM - Phase', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
 
+
+    # Adjust space between rows (increase 'hspace' for more space between rows)
+    plt.subplots_adjust(hspace=1.1)  # You can tweak this value (e.g., 0.5, 0.6) as needed
+
     # Tight layout
     plt.tight_layout()
 
     # Save the figure
-    plt.savefig("figs/displacement_fem.png", dpi=300)
+    plt.savefig("figs/displacement_fem.pdf", dpi=300, bbox_inches='tight')
 
 def plot_pinns_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn_phase, u_phase):
     """
@@ -291,56 +287,56 @@ def plot_pinns_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_s
     shrink = 0.5  # Shrink factor for the color bar
 
     # Amplitude of the incident wave
-    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu")
+    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu", rasterized=True)
     cb1 = fig.colorbar(c1, ax=axs[0, 0], shrink=shrink, orientation="horizontal", pad=0.07)
     cb1.set_label(r"$u_{\rm{sct}}$")
     cb1.set_ticks([np.trunc(np.min(u_inc_amp) * decimales) / decimales, np.trunc(np.max(u_inc_amp) * decimales) / decimales])
-    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales):.4f}'])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 0].axis("off")
     axs[0, 0].set_aspect("equal")
 
     # Amplitude of the scattered wave
-    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
+    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu", rasterized=True)
     cb2 = fig.colorbar(c2, ax=axs[0, 1], shrink=shrink, orientation="horizontal", pad=0.07)
     cb2.set_label(r"$u$")
     cb2.set_ticks([np.trunc(np.min(u_scn_amp) * decimales) / decimales, np.trunc(np.max(u_scn_amp) * decimales) / decimales])
-    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales):.4f}'])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 1].axis("off")
     axs[0, 1].set_aspect("equal")
 
     # Amplitude of the total wave
-    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
+    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu", rasterized=True)
     cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07)
     cb3.set_label(r"Error")
     cb3.set_ticks([np.trunc(np.min(u_amp) * decimales) / decimales, np.trunc(np.max(u_amp) * decimales) / decimales])
-    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales):.4f}'])
+    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales)}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales)}'], fontsize=7)
     axs[0, 2].axis("off")
     axs[0, 2].set_aspect("equal")
 
     # Phase of the incident wave
-    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu")
+    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu", rasterized=True)
     cb4 = fig.colorbar(c4, ax=axs[1, 0], shrink=shrink, orientation="horizontal", pad=0.07)
     cb4.set_label(r"$u_{\rm{sct}}$")
     cb4.set_ticks([np.trunc(np.min(u_inc_phase) * decimales) / decimales, np.trunc(np.max(u_inc_phase) * decimales) / decimales])
-    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales):.4f}'])
+    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 0].axis("off")
     axs[1, 0].set_aspect("equal")
 
     # Phase of the scattered wave
-    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu")
+    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu", rasterized=True)
     cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07)
     cb5.set_label(r"$u$")
     cb5.set_ticks([np.trunc(np.min(u_scn_phase) * decimales) / decimales, np.trunc(np.max(u_scn_phase) * decimales) / decimales])
-    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales):.4f}'])
+    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 1].axis("off")
     axs[1, 1].set_aspect("equal")
 
     # Phase of the total wave
-    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu")
+    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu", rasterized=True)
     cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07)
     cb6.set_label(r"Error")
     cb6.set_ticks([np.trunc(np.min(u_phase) * decimales) / decimales, np.trunc(np.max(u_phase) * decimales) / decimales])
-    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales):.4f}'])
+    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales)}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales)}'], fontsize=7)
     axs[1, 2].axis("off")
     axs[1, 2].set_aspect("equal")
 
@@ -348,11 +344,14 @@ def plot_pinns_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_s
     fig.text(0.05, 0.80, r'PINNs - Amplitude', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
     fig.text(0.05, 0.30, r'PINNs - Phase', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
 
+    # Adjust space between rows (increase 'hspace' for more space between rows)
+    plt.subplots_adjust(hspace=1.1)  # You can tweak this value (e.g., 0.5, 0.6) as needed
+
     # Tight layout
     plt.tight_layout()
 
     # Save the figure
-    plt.savefig("figs/displacement_pinns.png", dpi=300)
+    plt.savefig("figs/displacement_pinns.pdf", dpi=300, bbox_inches='tight')
 
 def plot_mesh_from_file(file_path_msh):
     """
@@ -402,7 +401,7 @@ def plot_mesh_from_file(file_path_msh):
     # print(f"Number of connections in absorbing layer: {num_connections_A}")
 
     # Plot the mesh
-    plt.figure(figsize=(3.0, 3.0))
+    plt.figure(figsize=(2.0, 2.0))
     plt.triplot(points[:, 0], points[:, 1], triangles_P, color='#cbcbcbff', lw=0.3)
     plt.triplot(points[:, 0], points[:, 1], triangles_A, color='#989898ff', lw=0.3)
 
@@ -422,7 +421,7 @@ def plot_mesh_from_file(file_path_msh):
 
     # Final plot adjustments
     plt.axis('off')
-    plt.savefig("figs/mesh.png", dpi=300)
+    plt.savefig("figs/mesh.pdf", dpi=300)
     plt.show()
 
     return None

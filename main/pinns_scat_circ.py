@@ -360,7 +360,7 @@ def generate_points(n_Omega_P, side_length, r_i, n_Gamma_I, n_boundary_e):
  
 def plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top):
     """
-    Plot the points in the domain and on the boundaries.
+    Plot the points in the domain and on the boundaries with improved colors and shapes.
 
     Parameters:
     x_f (torch.Tensor): x-coordinates of points inside the domain.
@@ -376,13 +376,37 @@ def plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_
     x_top (torch.Tensor): x-coordinates of points on the top boundary.
     y_top (torch.Tensor): y-coordinates of points on the top boundary.
     """
-    plt.figure(figsize=(3.0, 3.0))
-    plt.scatter(x_f.cpu().detach().numpy(), y_f.cpu().detach().numpy(), c='#989898ff', s=2, marker='.', label=r"$\bf{x}$ $\in$ $\Omega_{\rm P}$")
-    plt.scatter(x_inner.cpu().detach().numpy(), y_inner.cpu().detach().numpy(), c='#0000ffff', s=2, marker='.', label=r"$\bf{x}$ $\in$ $\Gamma_{\rm I}$")
-    plt.scatter(x_left.cpu().detach().numpy(), y_left.cpu().detach().numpy(), c='#008000ff', s=2, marker='.', label=r"$\bf{x}$ $\in$ $\Gamma_{\rm E}$")
-    plt.scatter(x_right.cpu().detach().numpy(), y_right.cpu().detach().numpy(), c='#008000ff', s=2, marker='.')
-    plt.scatter(x_bottom.cpu().detach().numpy(), y_bottom.cpu().detach().numpy(), c='#008000ff', s=2, marker='.')
-    plt.scatter(x_top.cpu().detach().numpy(), y_top.cpu().detach().numpy(), c='#008000ff', s=2, marker='.')
+    plt.figure(figsize=(2.0, 2.0))  # Increase figure size for better visibility
+    
+    # Define distinct colors for different categories
+    color_f = '#b2b2b2ff'  # Inside domain (Omega_P) - gray
+    color_inner = '#020076ff'  # Inner boundary (Gamma_I) - blue
+    color_left_right = '#005501ff'  # Left and right boundaries (Gamma_E) - green
+    
+    # Define markers for different categories
+    marker_f = '.'  # Circle for domain points
+    marker_inner = '.'  # Triangle for inner boundary
+    marker_left_right = '.'  # Square for boundary points
+    
+    # Scatter plot for points inside the domain (Omega_P)
+    plt.scatter(x_f.cpu().detach().numpy(), y_f.cpu().detach().numpy(), c=color_f, s=10, marker=marker_f, label=r"$\bf{x}$ $\in$ $\Omega_{\rm P}$", rasterized=True)
+    
+    # Scatter plot for points on the inner boundary (Gamma_I)
+    plt.scatter(x_inner.cpu().detach().numpy(), y_inner.cpu().detach().numpy(), c=color_inner, s=10, marker=marker_inner, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm I}$", rasterized=True)
+    
+    # Scatter plot for points on the left boundary (Gamma_E)
+    plt.scatter(x_left.cpu().detach().numpy(), y_left.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm E}$", rasterized=True)
+    
+    # Scatter plot for points on the right boundary (Gamma_E)
+    plt.scatter(x_right.cpu().detach().numpy(), y_right.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, rasterized=True)
+    
+    # Scatter plot for points on the bottom boundary (Gamma_E)
+    plt.scatter(x_bottom.cpu().detach().numpy(), y_bottom.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, rasterized=True)
+    
+    # Scatter plot for points on the top boundary (Gamma_E)
+    plt.scatter(x_top.cpu().detach().numpy(), y_top.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, rasterized=True)
+    
+    # Set aspect ratio to be equal for the plot
     plt.gca().set_aspect('equal', adjustable='box')
     plt.axis('off')
 
@@ -390,10 +414,12 @@ def plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_
     plt.xticks([-np.pi, 0, np.pi], [r'$-\pi$', '0', r'$\pi$'])
     plt.yticks([-np.pi, 0, np.pi], [r'$-\pi$', '0', r'$\pi$'])
 
-    # Adjust the legend position and remove the box
-    plt.legend(loc='upper center', bbox_to_anchor=(0.48, -0.04), frameon=False, ncol=3)
+    # Adjust the legend position and reduce the space between columns
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 0.0), frameon=False, ncol=3, columnspacing=0.2, handletextpad=0.01)
 
-    plt.savefig("figs/points.png", dpi=300)
+    # Save the figure
+    plt.savefig("figs/points.pdf", dpi=300, bbox_inches='tight', pad_inches=0.01)
+    
     # Show the plot
     plt.show()
 
