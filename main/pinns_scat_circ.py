@@ -376,7 +376,7 @@ def plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_
     x_top (torch.Tensor): x-coordinates of points on the top boundary.
     y_top (torch.Tensor): y-coordinates of points on the top boundary.
     """
-    plt.figure(figsize=(4, 4))
+    plt.figure(figsize=(3.0, 3.0))
     plt.scatter(x_f.cpu().detach().numpy(), y_f.cpu().detach().numpy(), c='#989898ff', s=2, marker='.', label=r"$\bf{x}$ $\in$ $\Omega_{\rm P}$")
     plt.scatter(x_inner.cpu().detach().numpy(), y_inner.cpu().detach().numpy(), c='#0000ffff', s=2, marker='.', label=r"$\bf{x}$ $\in$ $\Gamma_{\rm I}$")
     plt.scatter(x_left.cpu().detach().numpy(), y_left.cpu().detach().numpy(), c='#008000ff', s=2, marker='.', label=r"$\bf{x}$ $\in$ $\Gamma_{\rm E}$")
@@ -384,14 +384,16 @@ def plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_
     plt.scatter(x_bottom.cpu().detach().numpy(), y_bottom.cpu().detach().numpy(), c='#008000ff', s=2, marker='.')
     plt.scatter(x_top.cpu().detach().numpy(), y_top.cpu().detach().numpy(), c='#008000ff', s=2, marker='.')
     plt.gca().set_aspect('equal', adjustable='box')
+    plt.axis('off')
 
     # Set the ticks to include -pi and pi
     plt.xticks([-np.pi, 0, np.pi], [r'$-\pi$', '0', r'$\pi$'])
     plt.yticks([-np.pi, 0, np.pi], [r'$-\pi$', '0', r'$\pi$'])
 
     # Adjust the legend position and remove the box
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.04), frameon=False, ncol=3)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.48, -0.04), frameon=False, ncol=3)
 
+    plt.savefig("figs/points.png", dpi=300)
     # Show the plot
     plt.show()
 
@@ -427,7 +429,7 @@ def initialize_and_load_model(model_path):
     
     return model
 
-def predict_u(model, r_e, r_i, k, dom_samples=500):
+def predict_displacement_pinns(model, r_e, r_i, k, dom_samples=500):
     """
     Calculate the real part of the scattered field for a given model.
 
@@ -461,13 +463,15 @@ def predict_u(model, r_e, r_i, k, dom_samples=500):
     # Concatenate X and Y tensors into a single tensor
     domain_ten = torch.cat([X_ten, Y_ten], dim=1)
     u_sc_pred = model(domain_ten)
-    u_sc_pred = u_sc_pred[:, 0].detach().cpu().numpy().reshape(X.shape)
+    u_sc_amp_pred = u_sc_pred[:, 0].detach().cpu().numpy().reshape(X.shape)
+    u_sc_phase_pred = u_sc_pred[:, 1].detach().cpu().numpy().reshape(X.shape)
 
-    u_sc_pred = np.ma.masked_where(R_exact < r_i, u_sc_pred)
+    #u_sc_pred = np.ma.masked_where(R_exact < r_i, u_sc_pred)
 
     us_inc = np.exp(1j * k * X)
-    u_pred = np.real(us_inc + u_sc_pred)
-    return u_sc_pred, u_pred
+    u_amp_pred = np.real(us_inc + u_sc_amp_pred)
+    u_phase_pred = np.imag(us_inc + u_sc_phase_pred)
+    return u_sc_amp_pred, u_sc_phase_pred, u_amp_pred, u_phase_pred
 
 def measure_model_time_pinns(model, r_e, r_i, k, n_grid, num_runs=10):
     """
@@ -484,10 +488,54 @@ def measure_model_time_pinns(model, r_e, r_i, k, n_grid, num_runs=10):
     Returns:
     dict: A dictionary containing average time, standard deviation, minimum time, and maximum time.
     """
-    times = timeit.repeat(lambda: predict_u(model, r_e, r_i, k, n_grid), repeat=num_runs, number=1)
-    return {
-        'average_time': np.mean(times),
-        'std_dev_time': np.std(times),
-        'min_time': min(times),
-        'max_time': max(times)
-    }
+    times = timeit.repeat(lambda: predict_displacement_pinns(model, r_e, r_i, k, n_grid), repeat=num_runs, number=1)
+    average_time = round(np.mean(times), 3)
+    std_dev_time = round(np.std(times), 3)
+    min_time = round(min(times), 3)
+    max_time = round(max(times), 3)
+
+    return average_time, std_dev_time, min_time, max_time
+
+
+def mask_displacement(R_exact, r_i, r_e, u):
+    """
+    Mask the displacement outside the scatterer.
+
+    Parameters:
+    R_exact (numpy.ndarray): Radial coordinates.
+    r_i (float): Inner radius.
+    r_e (float): Outer radius.
+    u_amp_exact (numpy.ma.core.MaskedArray): Exact displacement amplitude.
+    u_scn_amp_exact (numpy.ma.core.MaskedArray): Exact scattered displacement amplitude.
+
+    Returns:
+    u_amp_exact (numpy.ma.core.MaskedArray): Masked exact displacement amplitude.
+    u_scn_amp_exact (numpy.ma.core.MaskedArray): Masked exact scattered displacement amplitude.
+    """
+    u = np.ma.masked_where(R_exact < r_i, u)
+    #u_scn_amp_exact = np.ma.masked_where(R_exact > r_e, u_scn_amp_exact)
+    return u
+
+def process_displacement_pinns(model, l_se, r_i, k, n_grid, X, Y, R_exact, u_scn_exact):
+    # Predict the displacement
+    u_sc_amp_pinns, u_sc_phase_pinns, u_amp_pinns, u_phase_pinns = predict_displacement_pinns(model, r_e, r_i, k, n_grid)
+    
+    # Calculate the incident field
+    u_inc_amp_pinns = np.real(np.exp(1j * k * X))
+    u_inc_phase_pinns = np.imag(np.exp(1j * k * X))
+    
+    # Mask the displacement
+    u_inc_amp_pinns = mask_displacement(R_exact, r_i, l_se, u_inc_amp_pinns)
+    u_inc_phase_pinns = mask_displacement(R_exact, r_i, l_se, u_inc_phase_pinns)
+    u_sc_amp_pinns = mask_displacement(R_exact, r_i, l_se, u_sc_amp_pinns)
+    u_sc_phase_pinns = mask_displacement(R_exact, r_i, l_se, u_sc_phase_pinns)
+    
+    # Calculate the total field
+    u_amp_pinns = u_inc_amp_pinns + u_sc_amp_pinns
+    u_phase_pinns = u_inc_phase_pinns + u_sc_phase_pinns
+    
+    # Calculate the differences
+    diff_uscn_amp = u_sc_amp_pinns - np.real(u_scn_exact)
+    diff_u_scn_phase = u_sc_phase_pinns - np.imag(u_scn_exact)
+    
+    return u_sc_amp_pinns,u_sc_phase_pinns,u_amp_pinns, u_phase_pinns, diff_uscn_amp, diff_u_scn_phase 

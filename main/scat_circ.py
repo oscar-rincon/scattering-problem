@@ -20,7 +20,7 @@ import meshio
 import matplotlib as mpl
 from scipy.interpolate import griddata
 
- # Configuración de LaTeX para matplotlib
+# Configuración de LaTeX para matplotlib
 pgf_with_latex = {                      # setup matplotlib to use latex for output
     "pgf.texsystem": "xelatex",        # change this if using xetex or lautex
     "text.usetex": False,                # use LaTeX to write all text
@@ -29,7 +29,7 @@ pgf_with_latex = {                      # setup matplotlib to use latex for outp
     "font.sans-serif": ["DejaVu Sans"], # specify the sans-serif font
     "font.monospace": [],
     "axes.labelsize": 8,               # LaTeX default is 10pt font.
-    "font.size": 10,
+    "font.size": 0,
     "legend.fontsize": 8,               # Make the legend/label fonts a little smaller
     "xtick.labelsize": 8,
     "ytick.labelsize": 8,
@@ -71,19 +71,19 @@ def sound_hard_circle_calc(k0, a, X, Y, n_terms=None):
     npts = np.size(fem_xx, 0)
     if n_terms is None:
         n_terms = int(30 + (k0 * a)**1.01)
-    u_sc = np.zeros((npts), dtype=np.complex128)
+    u_scn = np.zeros((npts), dtype=np.complex128)
     for n in range(-n_terms, n_terms):
         bessel_deriv = jv(n-1, k0*a) - n/(k0*a) * jv(n, k0*a)
         hankel_deriv = n/(k0*a)*hankel1(n, k0*a) - hankel1(n+1, k0*a)
-        u_sc += (-(1j)**(n) * (bessel_deriv/hankel_deriv) * hankel1(n, k0*r) * \
+        u_scn += (-(1j)**(n) * (bessel_deriv/hankel_deriv) * hankel1(n, k0*r) * \
             np.exp(1j*n*theta)).ravel()
-    u_sc = np.reshape(u_sc, X.shape)
-    us_inc = np.exp(1j*k0*X)
-    u = us_inc + u_sc
-    return u_sc, u
+    u_scn = np.reshape(u_scn, X.shape)
+    u_inc = np.exp(1j*k0*X)
+    u = u_inc + u_scn
+    return u_inc, u_scn, u
 
 
-def mask_displacement(R_exact, r_i, r_e, u_amp_exact, u_scn_amp_exact):
+def mask_displacement(R_exact, r_i, r_e, u):
     """
     Mask the displacement outside the scatterer.
 
@@ -98,46 +98,261 @@ def mask_displacement(R_exact, r_i, r_e, u_amp_exact, u_scn_amp_exact):
     u_amp_exact (numpy.ma.core.MaskedArray): Masked exact displacement amplitude.
     u_scn_amp_exact (numpy.ma.core.MaskedArray): Masked exact scattered displacement amplitude.
     """
-    u_amp_exact = np.ma.masked_where(R_exact < r_i, u_amp_exact)
-    #u_amp_exact = np.ma.masked_where(R_exact > r_e, u_amp_exact)
-    u_scn_amp_exact = np.ma.masked_where(R_exact < r_i, u_scn_amp_exact)
+    u = np.ma.masked_where(R_exact < r_i, u)
     #u_scn_amp_exact = np.ma.masked_where(R_exact > r_e, u_scn_amp_exact)
-    return u_amp_exact, u_scn_amp_exact
+    return u
 
-def plot_displacement_amplitude(X, Y, u_scn_amp, u_amp):
+def plot_exact_displacement(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn_phase, u_phase):
     """
-    Plot the amplitude of the scattered and total displacement.
+    Plot the amplitude and phase of the incident, scattered, and total displacement.
 
     Parameters:
     X (numpy.ndarray): X-coordinates of the grid.
     Y (numpy.ndarray): Y-coordinates of the grid.
-    u_scn_amp (numpy.ma.core.MaskedArray): Amplitude of the scattered displacement.
-    u_amp (numpy.ma.core.MaskedArray): Amplitude of the total displacement.
+    u_inc (numpy.ndarray): Incident displacement field.
+    u_scn (numpy.ndarray): Scattered displacement field.
+    u (numpy.ndarray): Total displacement field.
     """
-    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
-    # Plot u_scn_amp
-    c1 = axs[0].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
-    cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb1.set_label(r"Amplitude $u_{\rm{sct}}$")
-    cb1.set_ticks([np.trunc(np.min(u_scn_amp) * 1e+2) / 1e+2, np.trunc(np.max(u_scn_amp) * 1e+2) / 1e+2])
-    cb1.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * 1e+2) / 1e+2):.2f}', f'{(np.trunc(np.max(u_scn_amp) * 1e+2) / 1e+2):.2f}'])
+    # Downsample the data to reduce resolution
+    # factor = 3  # Downsample by a factor of 4 (you can adjust this)
+    # X = X[::factor, ::factor]
+    # Y = Y[::factor, ::factor]
+    # u_inc_amp = u_inc_amp[::factor, ::factor]
+    # u_scn_amp = u_scn_amp[::factor, ::factor]
+    # u_amp = u_amp[::factor, ::factor]
+    # u_inc_phase = u_inc_phase[::factor, ::factor]
+    # u_scn_phase = u_scn_phase[::factor, ::factor]
+    # u_phase = u_phase[::factor, ::factor]
+
+    fig, axs = plt.subplots(2, 3, figsize=(6.5, 3.5))
+    decimales = 1e+4  # Number of decimals for the color bar
+    shrink = 0.5  # Shrink factor for the color bar
+
+    # Amplitude of the incident wave
+    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu")
+    cb1 = fig.colorbar(c1, ax=axs[0, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb1.set_label(r"$u_{\rm{inc}}$")
+    cb1.set_ticks([np.trunc(np.min(u_inc_amp) * decimales) / decimales, np.trunc(np.max(u_inc_amp) * decimales) / decimales])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales):.4f}'])
+    axs[0, 0].axis("off")
+    axs[0, 0].set_aspect("equal")
+
+    # Amplitude of the scattered wave
+    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
+    cb2 = fig.colorbar(c2, ax=axs[0, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb2.set_label(r"$u_{\rm{sct}}$")
+    cb2.set_ticks([np.trunc(np.min(u_scn_amp) * decimales) / decimales, np.trunc(np.max(u_scn_amp) * decimales) / decimales])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales):.4f}'])
+    axs[0, 1].axis("off")
+    axs[0, 1].set_aspect("equal")
+
+    # Amplitude of the total wave
+    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
+    cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb3.set_label(r"$u$")
+    cb3.set_ticks([np.trunc(np.min(u_amp) * decimales) / decimales, np.trunc(np.max(u_amp) * decimales) / decimales])
+    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales):.4f}'])
+    axs[0, 2].axis("off")
+    axs[0, 2].set_aspect("equal")
+
+    # Phase of the incident wave
+    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu")
+    cb4 = fig.colorbar(c4, ax=axs[1, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb4.set_label(r"$u_{\rm{inc}}$")
+    cb4.set_ticks([np.trunc(np.min(u_inc_phase) * decimales) / decimales, np.trunc(np.max(u_inc_phase) * decimales) / decimales])
+    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales):.4f}'])
+    axs[1, 0].axis("off")
+    axs[1, 0].set_aspect("equal")
+
+    # Phase of the scattered wave
+    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu")
+    cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb5.set_label(r"$u_{\rm{sct}}$")
+    cb5.set_ticks([np.trunc(np.min(u_scn_phase) * decimales) / decimales, np.trunc(np.max(u_scn_phase) * decimales) / decimales])
+    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales):.4f}'])
+    axs[1, 1].axis("off")
+    axs[1, 1].set_aspect("equal")
+
+    # Phase of the total wave
+    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu")
+    cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb6.set_label(r"$u$")
+    cb6.set_ticks([np.trunc(np.min(u_phase) * decimales) / decimales, np.trunc(np.max(u_phase) * decimales) / decimales])
+    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales):.4f}'])
+    axs[1, 2].axis("off")
+    axs[1, 2].set_aspect("equal")
+
+    # Add rotated labels "Amplitude" and "Phase"
+    fig.text(0.05, 0.80, r'Exact - Amplitude', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
+    fig.text(0.05, 0.30, r'Exact - Phase', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
     
-    axs[0].axis("off")
-    axs[0].set_aspect("equal")
+    # Tight layout
+    plt.tight_layout()
 
-    # Plot u_amp
-    c2 = axs[1].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
-    cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb2.set_label(r"Amplitude $u$")
-    cb2.set_ticks([np.trunc(np.min(u_amp) * 1e+2) / 1e+2, np.trunc(np.max(u_amp) * 1e+2) / 1e+2])
-    cb2.set_ticklabels([f'{(np.trunc(np.min(u_amp) * 1e+2) / 1e+2):.2f}', f'{(np.trunc(np.max(u_amp) * 1e+2) / 1e+2):.2f}'])
-    axs[1].axis("off")
-    axs[1].set_aspect("equal")
+    # Save the figure
+    plt.savefig("figs/displacement_exact.png", dpi=300)
 
-    #plt.tight_layout()
-    plt.show()
  
+
+ 
+def plot_fem_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn_phase, u_phase):
+    """
+    Plot the amplitude and phase of the incident, scattered, and total displacement.
+
+    Parameters:
+    X (numpy.ndarray): X-coordinates of the grid.
+    Y (numpy.ndarray): Y-coordinates of the grid.
+    u_inc (numpy.ndarray): Incident displacement field.
+    u_scn (numpy.ndarray): Scattered displacement field.
+    u (numpy.ndarray): Total displacement field.
+    """
+    fig, axs = plt.subplots(2, 3, figsize=(6.5, 3.5))
+    decimales = 1e+4  # Number of decimals for the color bar
+    shrink = 0.5  # Shrink factor for the color bar
+
+    # Amplitude of the incident wave
+    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu")
+    cb1 = fig.colorbar(c1, ax=axs[0, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb1.set_label(r"$u_{\rm{sct}}$")
+    cb1.set_ticks([np.trunc(np.min(u_inc_amp) * decimales) / decimales, np.trunc(np.max(u_inc_amp) * decimales) / decimales])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales):.4f}'])
+    axs[0, 0].axis("off")
+    axs[0, 0].set_aspect("equal")
+
+    # Amplitude of the scattered wave
+    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
+    cb2 = fig.colorbar(c2, ax=axs[0, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb2.set_label(r"$u$")
+    cb2.set_ticks([np.trunc(np.min(u_scn_amp) * decimales) / decimales, np.trunc(np.max(u_scn_amp) * decimales) / decimales])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales):.4f}'])
+    axs[0, 1].axis("off")
+    axs[0, 1].set_aspect("equal")
+
+    # Amplitude of the total wave
+    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
+    cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb3.set_label(r"Error")
+    cb3.set_ticks([np.trunc(np.min(u_amp) * decimales) / decimales, np.trunc(np.max(u_amp) * decimales) / decimales])
+    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales):.4f}'])
+    axs[0, 2].axis("off")
+    axs[0, 2].set_aspect("equal")
+
+    # Phase of the incident wave
+    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu")
+    cb4 = fig.colorbar(c4, ax=axs[1, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb4.set_label(r"$u_{\rm{sct}}$")
+    cb4.set_ticks([np.trunc(np.min(u_inc_phase) * decimales) / decimales, np.trunc(np.max(u_inc_phase) * decimales) / decimales])
+    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales):.4f}'])
+    axs[1, 0].axis("off")
+    axs[1, 0].set_aspect("equal")
+
+    # Phase of the scattered wave
+    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu")
+    cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb5.set_label(r"$u$")
+    cb5.set_ticks([np.trunc(np.min(u_scn_phase) * decimales) / decimales, np.trunc(np.max(u_scn_phase) * decimales) / decimales])
+    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales):.4f}'])
+    axs[1, 1].axis("off")
+    axs[1, 1].set_aspect("equal")
+
+    # Phase of the total wave
+    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu")
+    cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb6.set_label(r"Error")
+    cb6.set_ticks([np.trunc(np.min(u_phase) * decimales) / decimales, np.trunc(np.max(u_phase) * decimales) / decimales])
+    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales):.4f}'])
+    axs[1, 2].axis("off")
+    axs[1, 2].set_aspect("equal")
+
+    # Add rotated labels "Amplitude" and "Phase"
+    fig.text(0.05, 0.80, r'FEM - Amplitude', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
+    fig.text(0.05, 0.30, r'FEM - Phase', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
+
+    # Tight layout
+    plt.tight_layout()
+
+    # Save the figure
+    plt.savefig("figs/displacement_fem.png", dpi=300)
+
+def plot_pinns_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn_phase, u_phase):
+    """
+    Plot the amplitude and phase of the incident, scattered, and total displacement.
+
+    Parameters:
+    X (numpy.ndarray): X-coordinates of the grid.
+    Y (numpy.ndarray): Y-coordinates of the grid.
+    u_inc (numpy.ndarray): Incident displacement field.
+    u_scn (numpy.ndarray): Scattered displacement field.
+    u (numpy.ndarray): Total displacement field.
+    """
+    fig, axs = plt.subplots(2, 3, figsize=(6.5, 3.5))
+    decimales = 1e+4  # Number of decimals for the color bar
+    shrink = 0.5  # Shrink factor for the color bar
+
+    # Amplitude of the incident wave
+    c1 = axs[0, 0].pcolormesh(X, Y, u_inc_amp, cmap="RdYlBu")
+    cb1 = fig.colorbar(c1, ax=axs[0, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb1.set_label(r"$u_{\rm{sct}}$")
+    cb1.set_ticks([np.trunc(np.min(u_inc_amp) * decimales) / decimales, np.trunc(np.max(u_inc_amp) * decimales) / decimales])
+    cb1.set_ticklabels([f'{(np.trunc(np.min(u_inc_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_amp) * decimales) / decimales):.4f}'])
+    axs[0, 0].axis("off")
+    axs[0, 0].set_aspect("equal")
+
+    # Amplitude of the scattered wave
+    c2 = axs[0, 1].pcolormesh(X, Y, u_scn_amp, cmap="RdYlBu")
+    cb2 = fig.colorbar(c2, ax=axs[0, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb2.set_label(r"$u$")
+    cb2.set_ticks([np.trunc(np.min(u_scn_amp) * decimales) / decimales, np.trunc(np.max(u_scn_amp) * decimales) / decimales])
+    cb2.set_ticklabels([f'{(np.trunc(np.min(u_scn_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_amp) * decimales) / decimales):.4f}'])
+    axs[0, 1].axis("off")
+    axs[0, 1].set_aspect("equal")
+
+    # Amplitude of the total wave
+    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu")
+    cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb3.set_label(r"Error")
+    cb3.set_ticks([np.trunc(np.min(u_amp) * decimales) / decimales, np.trunc(np.max(u_amp) * decimales) / decimales])
+    cb3.set_ticklabels([f'{(np.trunc(np.min(u_amp) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_amp) * decimales) / decimales):.4f}'])
+    axs[0, 2].axis("off")
+    axs[0, 2].set_aspect("equal")
+
+    # Phase of the incident wave
+    c4 = axs[1, 0].pcolormesh(X, Y, u_inc_phase, cmap="RdYlBu")
+    cb4 = fig.colorbar(c4, ax=axs[1, 0], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb4.set_label(r"$u_{\rm{sct}}$")
+    cb4.set_ticks([np.trunc(np.min(u_inc_phase) * decimales) / decimales, np.trunc(np.max(u_inc_phase) * decimales) / decimales])
+    cb4.set_ticklabels([f'{(np.trunc(np.min(u_inc_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_inc_phase) * decimales) / decimales):.4f}'])
+    axs[1, 0].axis("off")
+    axs[1, 0].set_aspect("equal")
+
+    # Phase of the scattered wave
+    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="RdYlBu")
+    cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb5.set_label(r"$u$")
+    cb5.set_ticks([np.trunc(np.min(u_scn_phase) * decimales) / decimales, np.trunc(np.max(u_scn_phase) * decimales) / decimales])
+    cb5.set_ticklabels([f'{(np.trunc(np.min(u_scn_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_scn_phase) * decimales) / decimales):.4f}'])
+    axs[1, 1].axis("off")
+    axs[1, 1].set_aspect("equal")
+
+    # Phase of the total wave
+    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="RdYlBu")
+    cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07)
+    cb6.set_label(r"Error")
+    cb6.set_ticks([np.trunc(np.min(u_phase) * decimales) / decimales, np.trunc(np.max(u_phase) * decimales) / decimales])
+    cb6.set_ticklabels([f'{(np.trunc(np.min(u_phase) * decimales) / decimales):.4f}', f'{(np.trunc(np.max(u_phase) * decimales) / decimales):.4f}'])
+    axs[1, 2].axis("off")
+    axs[1, 2].set_aspect("equal")
+
+    # Add rotated labels "Amplitude" and "Phase"
+    fig.text(0.05, 0.80, r'PINNs - Amplitude', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
+    fig.text(0.05, 0.30, r'PINNs - Phase', fontsize=8, fontweight='regular', va='center', ha='center', rotation='vertical')
+
+    # Tight layout
+    plt.tight_layout()
+
+    # Save the figure
+    plt.savefig("figs/displacement_pinns.png", dpi=300)
 
 def plot_mesh_from_file(file_path_msh):
     """
@@ -187,7 +402,7 @@ def plot_mesh_from_file(file_path_msh):
     # print(f"Number of connections in absorbing layer: {num_connections_A}")
 
     # Plot the mesh
-    plt.figure(figsize=(4, 4))
+    plt.figure(figsize=(3.0, 3.0))
     plt.triplot(points[:, 0], points[:, 1], triangles_P, color='#cbcbcbff', lw=0.3)
     plt.triplot(points[:, 0], points[:, 1], triangles_A, color='#989898ff', lw=0.3)
 
@@ -207,10 +422,10 @@ def plot_mesh_from_file(file_path_msh):
 
     # Final plot adjustments
     plt.axis('off')
+    plt.savefig("figs/mesh.png", dpi=300)
     plt.show()
 
-    # Return the calculated values
-    return num_nodes, num_connections_P, num_connections_A    
+    return None
 
 def process_onelab_data(file_path):
     """
@@ -244,9 +459,46 @@ def process_onelab_data(file_path):
 
     # Obtener los datos del campo
     try:
-        field = gmsh.view.getHomogeneousModelData(0, 0)
+        field = gmsh.view.getHomogeneousModelData(0, 0) # (0, 1) to get phase data - (0, 0) to get amplitude data
     except:
-        field = gmsh.view.getHomogeneousModelData(1, 0)
+        field = gmsh.view.getHomogeneousModelData(1, 0) # (1, 1) to get phase data - (0, 0) to get amplitude data
+    field_id = field[1]
+    field_data = np.array(field[2]).reshape(-1, 3)
+
+    # Crear el diccionario
+    node_u_data_dict = {}
+    for elem, u_vals in zip(elements, field_data):
+        for node, u_val in zip(elem, u_vals):
+            node_u_data_dict[node] = u_val
+
+    # Crear el diccionario node_tags -> node_coords
+    node_coords_dict = {}
+    for tag, coord in zip(node_tags, node_coords):
+        node_coords_dict[tag] = coord
+
+    # Añadir los valores de desplazamiento a las coordenadas de los nodos
+    for tag, coord in zip(node_tags, node_coords):
+        node_coords_dict[tag][2] = node_u_data_dict[tag]
+
+    # Crear un nuevo arreglo de nodos con los valores de desplazamiento
+    pts = np.array([coord for coord in node_coords_dict.values()])
+
+    # Create an array to store the reordered pts
+    reordered_pts = np.zeros((int(np.max(node_tags)), 3))
+
+    # Reorder pts based on the indices of node_tags
+    for i, tag in enumerate(node_tags-1):
+        reordered_pts[int(tag)] = pts[i]
+
+    X = reordered_pts[:, 0]
+    Y = reordered_pts[:, 1]
+    u_sc_amp = reordered_pts[:, 2]
+
+    # Obtener los datos del campo
+    try:
+        field = gmsh.view.getHomogeneousModelData(0, 1) # (0, 1) to get phase data - (0, 0) to get amplitude data
+    except:
+        field = gmsh.view.getHomogeneousModelData(1, 1) # (1, 1) to get phase data - (0, 0) to get amplitude data
     field_id = field[1]
     field_data = np.array(field[2]).reshape(-1, 3)
 
@@ -278,13 +530,12 @@ def process_onelab_data(file_path):
     for i, tag in enumerate(node_tags-1):
         reordered_pts[int(tag)] = pts[i]
 
-    X = reordered_pts[:, 0]
-    Y = reordered_pts[:, 1]
-    u_amp = reordered_pts[:, 2]
+ 
+    u_sc_phase = reordered_pts[:, 2]
 
-    return X, Y, elements-1, u_amp
+    return X, Y, elements-1, u_sc_amp, u_sc_phase
 
-def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, u_amp_fem):
+def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, uscn_phase_fem):
     """
     Plots the FEM results for the scattered and total displacement amplitudes.
 
@@ -293,32 +544,42 @@ def plot_fem_results(X_fem, Y_fem, elements_fem, uscn_amp_fem, u_amp_fem):
     Y_fem (numpy.ndarray): Y coordinates of the FEM mesh.
     elements_fem (numpy.ndarray): Elements of the FEM mesh.
     uscn_amp_fem (numpy.ndarray): Scattered displacement amplitude from FEM.
-    u_amp_fem (numpy.ndarray): Total displacement amplitude from FEM.
+    uscn_phase_fem (numpy.ndarray): Scattered displacement phase from FEM.
     """
-    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+    decimales = 1e+4  # Number of decimals for the color bar
+    shrink = 0.7  # Shrink factor for the color bar
+
+    fig, axs = plt.subplots(1, 2, figsize=(7, 3))
 
     # Plot the first result
-    axs[0].tricontourf(X_fem, Y_fem, elements_fem, uscn_amp_fem, cmap="RdYlBu", levels=100)
-    axs[0].triplot(X_fem, Y_fem, elements_fem, color='gray', lw=0.1)
+    c1 = axs[0].tricontourf(X_fem, Y_fem, elements_fem, uscn_amp_fem, cmap="RdYlBu", levels=200,
+                            vmin=(np.trunc(np.min(uscn_amp_fem) * decimales) / decimales), 
+                            vmax=(np.trunc(np.max(uscn_amp_fem) * decimales) / decimales))
     axs[0].axis('off')
-    cbar1 = plt.colorbar(axs[0].collections[0], ax=axs[0], shrink=0.9, orientation="horizontal", pad=0.07)
-    cbar1.set_ticks([uscn_amp_fem.min(), uscn_amp_fem.max()])
-    cbar1.set_ticklabels([f'{uscn_amp_fem.min():.2f}', f'{uscn_amp_fem.max():.2f}'])
-    cbar1.set_label(r"Amplitude $u_{\rm{sct}}$")
+    cbar1 = plt.colorbar(c1, ax=axs[0], shrink=shrink, orientation="horizontal", pad=0.07)
+    cbar1.set_ticks([(np.trunc(np.min(uscn_amp_fem) * decimales) / decimales), 
+                     (np.trunc(np.max(uscn_amp_fem) * decimales) / decimales)])
+    cbar1.set_ticklabels([f'{(np.trunc(np.min(uscn_amp_fem) * decimales) / decimales):.4f}', 
+                          f'{(np.trunc(np.max(uscn_amp_fem) * decimales) / decimales):.4f}'])
+    cbar1.set_label(r"Amplitude")
     axs[0].set_aspect('equal', adjustable='box')
 
     # Plot the second result
-    axs[1].tricontourf(X_fem, Y_fem, elements_fem, u_amp_fem, cmap="RdYlBu", levels=100)
-    axs[1].triplot(X_fem, Y_fem, elements_fem, color='gray', lw=0.1)
+    c2 = axs[1].tricontourf(X_fem, Y_fem, elements_fem, uscn_phase_fem, cmap="RdYlBu", levels=200,
+                            vmin=(np.trunc(np.min(uscn_phase_fem) * decimales) / decimales), 
+                            vmax=(np.trunc(np.max(uscn_phase_fem) * decimales) / decimales))
     axs[1].axis('off')
-    cbar2 = plt.colorbar(axs[1].collections[0], ax=axs[1], shrink=0.9, orientation="horizontal", pad=0.07)
-    cbar2.set_ticks([u_amp_fem.min(), u_amp_fem.max()])
-    cbar2.set_ticklabels([f'{u_amp_fem.min():.2f}', f'{u_amp_fem.max():.2f}'])
+    cbar2 = plt.colorbar(c2, ax=axs[1], shrink=shrink, orientation="horizontal", pad=0.07)
+    cbar2.set_ticks([(np.trunc(np.min(uscn_phase_fem) * decimales) / decimales), 
+                     (np.trunc(np.max(uscn_phase_fem) * decimales) / decimales)])
+    cbar2.set_ticklabels([f'{(np.trunc(np.min(uscn_phase_fem) * decimales) / decimales):.4f}', 
+                          f'{(np.trunc(np.max(uscn_phase_fem) * decimales) / decimales):.4f}'])
+    cbar2.set_label(r"Phase")
     axs[1].set_aspect('equal', adjustable='box')
-    cbar2.set_label(r"Amplitude $u$")
-    plt.show()    
 
-def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid):
+    plt.show()
+
+def interpolate_fem_data(X_fem, Y_fem, uscn_amp_fem, uscn_phase_fem, r_i, r_e, n_grid):
     """
     Interpolates FEM data onto a regular grid and masks the displacement outside the scatterer.
 
@@ -338,7 +599,7 @@ def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid
     uscn_amp_interp_fem (numpy.ma.core.MaskedArray): Interpolated and masked scattered displacement amplitude.
     """
     # Scale the data
-    X_fem, Y_fem = X_fem*r_e, Y_fem*r_e
+    #X_fem, Y_fem = X_fem*r_e, Y_fem*r_e
 
     # Create a regular grid where you want to compare the exact solution
     x_grid = np.linspace(min(X_fem), max(X_fem), n_grid)
@@ -346,7 +607,7 @@ def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid
     X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
 
     # Interpolate onto the grid without NaN values
-    u_amp_interp_fem = griddata((X_fem, Y_fem), u_amp_fem, (X_grid, Y_grid), method='cubic')
+    uscn_phase_interp_fem = griddata((X_fem, Y_fem), uscn_phase_fem, (X_grid, Y_grid), method='cubic')
     uscn_amp_interp_fem = griddata((X_fem, Y_fem), uscn_amp_fem, (X_grid, Y_grid), method='cubic')
 
     # Create R_grid and Theta_grid for the new grid
@@ -354,12 +615,32 @@ def interpolate_fem_data(X_fem, Y_fem, u_amp_fem, uscn_amp_fem, r_i, r_e, n_grid
     Theta_grid = np.arctan2(Y_grid, X_grid)
 
     # Mask the displacement outside the scatterer
-    u_amp_interp_fem = np.ma.masked_where(R_grid < r_i, u_amp_interp_fem)
+    uscn_phase_interp_fem = np.ma.masked_where(R_grid < r_i, uscn_phase_interp_fem)
     #u_amp_interp_fem = np.ma.masked_where(R_grid > r_e, u_amp_interp_fem)
     uscn_amp_interp_fem = np.ma.masked_where(R_grid < r_i, uscn_amp_interp_fem)
     #uscn_amp_interp_fem = np.ma.masked_where(R_grid > r_e, uscn_amp_interp_fem)
 
-    return X_grid, Y_grid, u_amp_interp_fem, uscn_amp_interp_fem
+    return X_grid, Y_grid, uscn_amp_interp_fem, uscn_phase_interp_fem
+
+def extract_fem_displacements(file_path, r_i, l_se, k, n_grid, u_scn_exact, u_exact):
+
+    X, Y, elements, u_sc_amp, u_sc_phase = process_onelab_data(file_path)
+    X_grid, Y_grid, uscn_amp_interp_fem, uscn_phase_interp_fem = interpolate_fem_data(X, Y, u_sc_amp, u_sc_phase, r_i, l_se, n_grid)
+    u_inc_amp_fem = np.real(np.exp(1j*k*X_grid))
+    u_inc_phase_fem = np.imag(np.exp(1j*k*X_grid))
+    R_grid = np.sqrt(X_grid**2 + Y_grid**2)
+    u_inc_amp_fem = mask_displacement(R_grid, r_i, l_se, u_inc_amp_fem)
+    u_inc_phase_fem = mask_displacement(R_grid, r_i, l_se, u_inc_phase_fem)
+    uscn_amp_interp_fem = mask_displacement(R_grid, r_i, l_se, uscn_amp_interp_fem)
+    uscn_phase_interp_fem = mask_displacement(R_grid, r_i, l_se, uscn_phase_interp_fem)
+    u_amp_fem = u_inc_amp_fem + uscn_amp_interp_fem
+    u_phase_fem = u_inc_phase_fem + uscn_phase_interp_fem
+    diff_uscn_amp, diff_u_amp = uscn_amp_interp_fem - np.real(u_scn_exact), u_amp_fem - np.real(u_exact)
+    diff_u_scn_phase, diff_u_phase = uscn_phase_interp_fem - np.imag(u_scn_exact), u_phase_fem - np.imag(u_exact)
+    return uscn_amp_interp_fem, uscn_phase_interp_fem, u_amp_fem, u_phase_fem, diff_uscn_amp, diff_u_amp, diff_u_scn_phase, diff_u_phase
+
+
+
 
 def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp, r_i, r_e):
     """
@@ -412,19 +693,19 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
 
     # Plot u_scn_amp
     order = 1e+4
-    c1 = axs[0].pcolormesh(X, Y, diff_uscn_amp, cmap="RdYlBu", vmin=np.min(diff_uscn_amp), vmax=np.max(diff_uscn_amp))
+    c1 = axs[0].pcolormesh(X, Y, diff_uscn_amp, cmap="RdYlBu", vmin=(np.trunc(np.min(diff_uscn_amp) *order) / order), vmax=(np.trunc(np.max(diff_uscn_amp) * order) /order))
     cb1 = fig.colorbar(c1, ax=axs[0], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb1.set_label(r"Error $u_{\rm{sct}}$")
-    cb1.set_ticks([np.trunc(np.min(diff_uscn_amp) *order) / order, np.trunc(np.max(diff_uscn_amp) * order) /order])
+    cb1.set_label(r"Error $u_{\rm{sct}}$ Amplitude")
+    cb1.set_ticks([(np.trunc(np.min(diff_uscn_amp) *order) / order), (np.trunc(np.max(diff_uscn_amp) * order) /order)])
     cb1.set_ticklabels([f'{(np.trunc(np.min(diff_uscn_amp) * order) / order)}', f'{(np.trunc(np.max(diff_uscn_amp) * order) / order)}']) 
     axs[0].axis("off")
     axs[0].set_aspect("equal")
 
     # Plot u_amp
     
-    c2 = axs[1].pcolormesh(X, Y, diff_u_amp, cmap="RdYlBu", vmin=np.min(diff_u_amp), vmax=np.max(diff_u_amp))
+    c2 = axs[1].pcolormesh(X, Y, diff_u_amp, cmap="RdYlBu", vmin=(np.trunc(np.min(diff_u_amp) * order) / order), vmax=(np.trunc(np.max(diff_u_amp) * order) / order))
     cb2 = fig.colorbar(c2, ax=axs[1], shrink=0.7, orientation="horizontal", pad=0.07)
-    cb2.set_label(r"Error $u$")
+    cb2.set_label(r"Error $u_{\rm{sct}}$ Phase")
     cb2.set_ticks([(np.trunc(np.min(diff_u_amp) * order) / order), (np.trunc(np.max(diff_u_amp) * order) / order)])
     cb2.set_ticklabels([f'{(np.trunc(np.min(diff_u_amp) * order) / order)}', f'{(np.trunc(np.max(diff_u_amp) *order) /order)}'])
     axs[1].axis("off")
@@ -433,6 +714,33 @@ def calc_error(X, Y, u_scn_amp_exact, u_amp_exact, uscn_amp_interp, u_amp_interp
     plt.show()
 
     return rel_error_uscn, rel_error_u
+
+def calculate_relative_errors(u_scn_exact, u_exact, diff_uscn_amp, diff_u_scn_phase, R_exact, r_i):
+    # Mask the displacement for the inner radius
+    u_scn_exact[R_exact < r_i] = 0
+    u_exact[R_exact < r_i] = 0
+    diff_uscn_amp[R_exact < r_i] = 0
+    diff_u_scn_phase[R_exact < r_i] = 0
+
+    # Calculate the L2 norm of the differences for u_scn
+    norm_diff_uscn = np.linalg.norm(diff_uscn_amp, 2)
+    norm_usc_exact = np.linalg.norm(np.real(u_scn_exact), 2)
+    rel_error_uscn_amp = norm_diff_uscn / norm_usc_exact
+
+    # Calculate the L2 norm of the differences for u
+    norm_diff_u = np.linalg.norm(diff_u_scn_phase, 2)
+    norm_u_exact = np.linalg.norm(np.imag(u_scn_exact), 2)
+    rel_error_uscn_phase = norm_diff_u / norm_u_exact
+
+    # Calculate the max and min differences for u_scn
+    max_diff_uscn_amp = np.max(diff_uscn_amp)
+    min_diff_uscn_amp = np.min(diff_uscn_amp)
+
+    # Calculate the max and min differences for u
+    max_diff_u_phase = np.max(diff_u_scn_phase)
+    min_diff_u_phase = np.min(diff_u_scn_phase)
+
+    return rel_error_uscn_amp, rel_error_uscn_phase, max_diff_uscn_amp, min_diff_uscn_amp, max_diff_u_phase, min_diff_u_phase
 
 def measure_execution_time(getdp_path, command_args, num_runs=10):
     """
@@ -454,9 +762,9 @@ def measure_execution_time(getdp_path, command_args, num_runs=10):
                        stderr=subprocess.DEVNULL)
 
     times = timeit.repeat(run_getdp, repeat=num_runs, number=1)
-    average_time = mean(times)
-    std_dev_time = std(times)
-    min_time = min(times)
-    max_time = max(times)
+    average_time = round(mean(times), 3)
+    std_dev_time = round(std(times), 3)
+    min_time = round(min(times), 3)
+    max_time = round(max(times), 3)
 
-    return average_time, std_dev_time, min_time, max_time    
+    return average_time, std_dev_time, min_time, max_time 
