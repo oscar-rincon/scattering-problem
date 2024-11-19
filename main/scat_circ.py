@@ -1,4 +1,5 @@
 # utf-8
+
 """
 Scattering of a plane wave by a rigid cylinder using the Mie series expansion.
 
@@ -11,7 +12,7 @@ is the wave scattered by the cylinder. The displacement field is calculated in p
 """
 import subprocess
 import timeit
-from scipy.special import hankel1,jv
+from scipy.special import hankel1,hankel2,jv,jn
 import numpy as np
 from numpy import pi, exp, cos, zeros_like, ma, real, round, min, max, std, mean
 import matplotlib.pyplot as plt

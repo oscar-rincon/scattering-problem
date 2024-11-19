@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import torch 
 import torch.nn as nn
 import timeit
+import time
+from functools import partial   
 
 class MLP(nn.Module):
     def __init__(self, input_size, output_size, hidden_layers, hidden_units, activation_function):
@@ -270,19 +272,7 @@ def train_lbfgs(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_ri
     closure_fn = partial(closure, model, optimizer, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k)
     optimizer.step(closure_fn)
 
-
-# Define the device
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-# Parameters
-n_Omega_P = 5_000        # Number of points inside the annular region
-n_Gamma_I = 100          # Number of points on the inner boundary (r = r_i)
-n_Gamma_E = 200          # Number of points on the outer boundary (r = r_e)
-r_i = np.pi / 4          # Inner radius
-r_e = np.pi              # Outer radius
-k = 3.0                  # Wave number
-iter = 0                 # Iteration counter
-side_length = 2 * r_e    # Side length of the square
+ 
 
 def generate_points(n_Omega_P, side_length, r_i, n_Gamma_I, n_boundary_e):
     """
@@ -389,22 +379,22 @@ def plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_
     marker_left_right = '.'  # Square for boundary points
     
     # Scatter plot for points inside the domain (Omega_P)
-    plt.scatter(x_f.cpu().detach().numpy(), y_f.cpu().detach().numpy(), c=color_f, s=10, marker=marker_f, label=r"$\bf{x}$ $\in$ $\Omega_{\rm P}$", rasterized=True)
+    plt.scatter(x_f.cpu().detach().numpy(), y_f.cpu().detach().numpy(), c=color_f, s=1, marker=marker_f, label=r"$\bf{x}$ $\in$ $\Omega_{\rm P}$", rasterized=True)
     
     # Scatter plot for points on the inner boundary (Gamma_I)
-    plt.scatter(x_inner.cpu().detach().numpy(), y_inner.cpu().detach().numpy(), c=color_inner, s=10, marker=marker_inner, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm I}$", rasterized=True)
+    plt.scatter(x_inner.cpu().detach().numpy(), y_inner.cpu().detach().numpy(), c=color_inner, s=1, marker=marker_inner, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm I}$", rasterized=True)
     
     # Scatter plot for points on the left boundary (Gamma_E)
-    plt.scatter(x_left.cpu().detach().numpy(), y_left.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm E}$", rasterized=True)
+    plt.scatter(x_left.cpu().detach().numpy(), y_left.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm E}$", rasterized=True)
     
     # Scatter plot for points on the right boundary (Gamma_E)
-    plt.scatter(x_right.cpu().detach().numpy(), y_right.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, rasterized=True)
+    plt.scatter(x_right.cpu().detach().numpy(), y_right.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, rasterized=True)
     
     # Scatter plot for points on the bottom boundary (Gamma_E)
-    plt.scatter(x_bottom.cpu().detach().numpy(), y_bottom.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, rasterized=True)
+    plt.scatter(x_bottom.cpu().detach().numpy(), y_bottom.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, rasterized=True)
     
     # Scatter plot for points on the top boundary (Gamma_E)
-    plt.scatter(x_top.cpu().detach().numpy(), y_top.cpu().detach().numpy(), c=color_left_right, s=10, marker=marker_left_right, rasterized=True)
+    plt.scatter(x_top.cpu().detach().numpy(), y_top.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, rasterized=True)
     
     # Set aspect ratio to be equal for the plot
     plt.gca().set_aspect('equal', adjustable='box')
@@ -565,3 +555,62 @@ def process_displacement_pinns(model, l_se, r_i, k, n_grid, X, Y, R_exact, u_scn
     diff_u_scn_phase = u_sc_phase_pinns - np.imag(u_scn_exact)
     
     return u_sc_amp_pinns,u_sc_phase_pinns,u_amp_pinns, u_phase_pinns, diff_uscn_amp, diff_u_scn_phase 
+
+
+# Function for training the model
+def train_scattering_model(r_i, l_e, k, n_Omega_P, n_Gamma_I, n_Gamma_E, device=None):
+    """
+    Train a neural network model to solve a scattering problem in an annular region.
+    
+    Parameters:
+    - r_i (float): Inner radius of the annular region.
+    - l_e (float): Outer radius of the annular region.
+    - k (float): Wave number.
+    - n_Omega_P (int): Number of points inside the annular region.
+    - n_Gamma_I (int): Number of points on the inner boundary (r = r_i).
+    - n_Gamma_E (int): Number of points on the outer boundary (r = r_e).
+    - device (torch.device): Device to use for training (GPU or CPU).
+    
+    Returns:
+    - model (nn.Module): Trained model.
+    - total_training_time (float): Total training time.
+    """
+    # Default to CUDA if available, otherwise CPU
+    device = device or (torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+    
+    # Initialize the iteration counter
+    iter = 0
+    side_length = 2 * l_e  # Side length of the square
+    
+    # Generate points for the annular region and boundaries
+    x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top = generate_points(n_Omega_P, side_length, r_i, n_Gamma_I, n_Gamma_E)
+    
+    # Plot the generated points
+    plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top)
+    
+    # Initialize the model
+    model = MLP(input_size=2, output_size=2, hidden_layers=3, hidden_units=350, activation_function=nn.Tanh()).to(device)
+    model.apply(init_weights)
+    
+    # Training with Adam optimizer
+    start_time_adam = time.time()
+    train_adam(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=1,iter)
+    end_time_adam = time.time()
+    adam_training_time = end_time_adam - start_time_adam
+    print(f"Adam training time: {adam_training_time:.6e} seconds")
+    
+    # Training with L-BFGS optimizer
+    start_time_lbfgs = time.time()
+    train_lbfgs(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=1,iter)
+    end_time_lbfgs = time.time()
+    lbfgs_training_time = end_time_lbfgs - start_time_lbfgs
+    print(f"LBFGS training time: {lbfgs_training_time:.6e} seconds")
+    
+    # Total training time
+    total_training_time = adam_training_time + lbfgs_training_time
+    print(f"Total training time: {total_training_time:.6e} seconds")
+    
+    # Save the trained model
+    torch.save(model.state_dict(), f'Scattering.pt')
+    
+    return model, total_training_time
