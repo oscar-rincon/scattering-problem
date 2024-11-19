@@ -445,7 +445,7 @@ def initialize_and_load_model(model_path):
     
     return model
 
-def predict_displacement_pinns(model, r_e, r_i, k, dom_samples=500):
+def predict_displacement_pinns(model, l_e, r_i, k, dom_samples=500):
     """
     Calculate the real part of the scattered field for a given model.
 
@@ -464,8 +464,8 @@ def predict_displacement_pinns(model, r_e, r_i, k, dom_samples=500):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # x and y coordinates
-    x = np.linspace(-r_e, r_e, dom_samples)
-    y = np.linspace(-r_e, r_e, dom_samples)
+    x = np.linspace(-l_e, l_e, dom_samples)
+    y = np.linspace(-l_e, l_e, dom_samples)
 
     # Meshgrid of the domain
     X, Y = np.meshgrid(x, y)
@@ -489,7 +489,7 @@ def predict_displacement_pinns(model, r_e, r_i, k, dom_samples=500):
     u_phase_pred = np.imag(us_inc + u_sc_phase_pred)
     return u_sc_amp_pred, u_sc_phase_pred, u_amp_pred, u_phase_pred
 
-def measure_model_time_pinns(model, r_e, r_i, k, n_grid, num_runs=10):
+def measure_model_time_pinns(model, l_e, r_i, k, n_grid, num_runs=10):
     """
     Measure the time required to use the model.
 
@@ -504,7 +504,7 @@ def measure_model_time_pinns(model, r_e, r_i, k, n_grid, num_runs=10):
     Returns:
     dict: A dictionary containing average time, standard deviation, minimum time, and maximum time.
     """
-    times = timeit.repeat(lambda: predict_displacement_pinns(model, r_e, r_i, k, n_grid), repeat=num_runs, number=1)
+    times = timeit.repeat(lambda: predict_displacement_pinns(model, l_e, r_i, k, n_grid), repeat=num_runs, number=1)
     average_time = round(np.mean(times), 3)
     std_dev_time = round(np.std(times), 3)
     min_time = round(min(times), 3)
@@ -532,19 +532,19 @@ def mask_displacement(R_exact, r_i, r_e, u):
     #u_scn_amp_exact = np.ma.masked_where(R_exact > r_e, u_scn_amp_exact)
     return u
 
-def process_displacement_pinns(model, l_se, r_i, k, n_grid, X, Y, R_exact, u_scn_exact):
+def process_displacement_pinns(model, l_e, r_i, k, n_grid, X, Y, R_exact, u_scn_exact):
     # Predict the displacement
-    u_sc_amp_pinns, u_sc_phase_pinns, u_amp_pinns, u_phase_pinns = predict_displacement_pinns(model, r_e, r_i, k, n_grid)
+    u_sc_amp_pinns, u_sc_phase_pinns, u_amp_pinns, u_phase_pinns = predict_displacement_pinns(model, l_e, r_i, k, n_grid)
     
     # Calculate the incident field
     u_inc_amp_pinns = np.real(np.exp(1j * k * X))
     u_inc_phase_pinns = np.imag(np.exp(1j * k * X))
     
     # Mask the displacement
-    u_inc_amp_pinns = mask_displacement(R_exact, r_i, l_se, u_inc_amp_pinns)
-    u_inc_phase_pinns = mask_displacement(R_exact, r_i, l_se, u_inc_phase_pinns)
-    u_sc_amp_pinns = mask_displacement(R_exact, r_i, l_se, u_sc_amp_pinns)
-    u_sc_phase_pinns = mask_displacement(R_exact, r_i, l_se, u_sc_phase_pinns)
+    u_inc_amp_pinns = mask_displacement(R_exact, r_i, l_e, u_inc_amp_pinns)
+    u_inc_phase_pinns = mask_displacement(R_exact, r_i, l_e, u_inc_phase_pinns)
+    u_sc_amp_pinns = mask_displacement(R_exact, r_i, l_e, u_sc_amp_pinns)
+    u_sc_phase_pinns = mask_displacement(R_exact, r_i, l_e, u_sc_phase_pinns)
     
     # Calculate the total field
     u_amp_pinns = u_inc_amp_pinns + u_sc_amp_pinns
@@ -594,14 +594,14 @@ def train_scattering_model(r_i, l_e, k, n_Omega_P, n_Gamma_I, n_Gamma_E, device=
     
     # Training with Adam optimizer
     start_time_adam = time.time()
-    train_adam(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=1,iter)
+    train_adam(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=1)
     end_time_adam = time.time()
     adam_training_time = end_time_adam - start_time_adam
     print(f"Adam training time: {adam_training_time:.6e} seconds")
     
     # Training with L-BFGS optimizer
     start_time_lbfgs = time.time()
-    train_lbfgs(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=1,iter)
+    train_lbfgs(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=1)
     end_time_lbfgs = time.time()
     lbfgs_training_time = end_time_lbfgs - start_time_lbfgs
     print(f"LBFGS training time: {lbfgs_training_time:.6e} seconds")
