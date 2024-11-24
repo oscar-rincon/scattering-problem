@@ -1,0 +1,5 @@
+Método,Tiempo Promedio (s),Desviación Estándar (s),Tiempo Máximo (s),Tiempo Mínimo (s)
+FEM,3.257,0.776,7.457,2.410
+PINNs,0.012,0.004,0.116,0.009
+FEM/PINNs,271.417,0.410,64.284,267.778
+PINNs/FEM,0.004,0.410,0.016,0.004
