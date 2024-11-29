@@ -9,3 +9,6 @@ dependencies:
   - matplotlib=3.8.4
   - pytorch==2.3.0
   - pyDOE==0.3.8
+  - pandas==2.2.3
+  - gmsh==4.13.1
+  - meshio==5.3.5
