@@ -380,22 +380,22 @@ def plot_points(x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_
     marker_left_right = '.'  # Square for boundary points
     
     # Scatter plot for points inside the domain (Omega_P)
-    plt.scatter(x_f.cpu().detach().numpy(), y_f.cpu().detach().numpy(), c=color_f, s=1, marker=marker_f, label=r"$\bf{x}$ $\in$ $\Omega_{\rm P}$", rasterized=True)
+    plt.scatter(x_f.cpu().detach().numpy(), y_f.cpu().detach().numpy(), c=color_f, s=0.1, marker=marker_f, label=r"$\bf{x}$ $\in$ $\Omega_{\rm P}$", rasterized=True)
     
     # Scatter plot for points on the inner boundary (Gamma_I)
-    plt.scatter(x_inner.cpu().detach().numpy(), y_inner.cpu().detach().numpy(), c=color_inner, s=1, marker=marker_inner, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm I}$", rasterized=True)
+    plt.scatter(x_inner.cpu().detach().numpy(), y_inner.cpu().detach().numpy(), c=color_inner, s=0.3, marker=marker_inner, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm I}$", rasterized=True)
     
     # Scatter plot for points on the left boundary (Gamma_E)
-    plt.scatter(x_left.cpu().detach().numpy(), y_left.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm E}$", rasterized=True)
+    plt.scatter(x_left.cpu().detach().numpy(), y_left.cpu().detach().numpy(), c=color_left_right, s=0.1, marker=marker_left_right, label=r"$\bf{x}$ $\in$ $\Gamma_{\rm E}$", rasterized=True)
     
     # Scatter plot for points on the right boundary (Gamma_E)
-    plt.scatter(x_right.cpu().detach().numpy(), y_right.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, rasterized=True)
+    plt.scatter(x_right.cpu().detach().numpy(), y_right.cpu().detach().numpy(), c=color_left_right, s=0.1, marker=marker_left_right, rasterized=True)
     
     # Scatter plot for points on the bottom boundary (Gamma_E)
-    plt.scatter(x_bottom.cpu().detach().numpy(), y_bottom.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, rasterized=True)
+    plt.scatter(x_bottom.cpu().detach().numpy(), y_bottom.cpu().detach().numpy(), c=color_left_right, s=0.1, marker=marker_left_right, rasterized=True)
     
     # Scatter plot for points on the top boundary (Gamma_E)
-    plt.scatter(x_top.cpu().detach().numpy(), y_top.cpu().detach().numpy(), c=color_left_right, s=1, marker=marker_left_right, rasterized=True)
+    plt.scatter(x_top.cpu().detach().numpy(), y_top.cpu().detach().numpy(), c=color_left_right, s=0.1, marker=marker_left_right, rasterized=True)
     
     # Set aspect ratio to be equal for the plot
     plt.gca().set_aspect('equal', adjustable='box')
