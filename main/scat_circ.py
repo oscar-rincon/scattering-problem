@@ -222,13 +222,11 @@ def plot_fem_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn
     axs[0, 1].set_aspect("equal")
 
     # Amplitude of the total wave
-    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu", rasterized=True, vmin=-1.5, vmax=1.5)#, vmin=-(np.trunc(np.max(np.abs(u_amp)) * decimales) / decimales), vmax=(np.trunc(np.max(np.abs(u_amp)) * decimales) / decimales))
+    c3 = axs[0, 2].pcolormesh(X, Y, np.abs(u_amp)/np.abs(u_scn_amp).max(), cmap="magma", rasterized=True)
     cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
-    cb3.set_label(r"Difference")
-    cb3.set_ticks([-1.5, 1.5])
-    cb3.set_ticklabels([f'{-1.5}', f'{1.5}'], fontsize=7)    
-    #cb3.set_ticks([-(np.trunc(np.max(np.abs(u_amp)) * decimales) / decimales), (np.trunc(np.max(np.abs(u_amp)) * decimales) / decimales)])
-    #cb3.set_ticklabels([f'{-(np.trunc(np.max(np.abs(u_amp)) * decimales) / decimales)}', f'{(np.trunc(np.max(np.abs(u_amp)) * decimales) / decimales)}'], fontsize=7)
+    cb3.set_label(r"|Error| / max($u$)")
+    cb3.set_ticks([0, np.max(np.abs(u_amp)/np.abs(u_scn_amp).max())])
+    cb3.set_ticklabels([f'{0:.1f}', f'{np.max(np.abs(u_amp)/np.abs(u_scn_amp).max()):.4f}'], fontsize=7)
     axs[0, 2].axis("off")
     axs[0, 2].set_aspect("equal")
 
@@ -242,7 +240,7 @@ def plot_fem_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn
     axs[1, 0].set_aspect("equal")
 
     # Phase of the scattered wave
-    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="twilight_shifted", rasterized=True, vmin=-(np.pi), vmax=(np.pi))
+    c5 = axs[1, 1].pcolormesh(X, Y, u_scn_phase, cmap="twilight_shifted", rasterized=True, vmin=-np.pi, vmax=(np.pi))
     cb5 = fig.colorbar(c5, ax=axs[1, 1], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb5.set_label(r"$u$")
     cb5.set_ticks([-(np.pi),(np.pi)])
@@ -251,11 +249,11 @@ def plot_fem_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_scn
     axs[1, 1].set_aspect("equal")
 
     # Phase of the total wave
-    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="twilight_shifted", rasterized=True, vmin=-(np.pi), vmax=(np.pi))
+    c6 = axs[1, 2].pcolormesh(X, Y, np.abs(u_phase)/np.abs(u_scn_phase).max(), cmap="magma", rasterized=True)
     cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
-    cb6.set_label(r"Difference")
-    cb6.set_ticks([-(np.pi),(np.pi)])
-    cb6.set_ticklabels([r'-$\pi$', r'$\pi$'], fontsize=7)
+    cb6.set_label(r"|Error| / max($u$)")
+    cb6.set_ticks([0, np.max(np.abs(u_phase)/np.abs(u_scn_phase).max())])
+    cb6.set_ticklabels([f'{0:.1f}', f'{np.max(np.abs(u_phase)/np.abs(u_scn_phase).max()):.4f}'], fontsize=7)
     axs[1, 2].axis("off")
     axs[1, 2].set_aspect("equal")
 
@@ -309,11 +307,11 @@ def plot_pinns_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_s
     axs[0, 1].set_aspect("equal")
 
     # Amplitude of the total wave
-    c3 = axs[0, 2].pcolormesh(X, Y, u_amp, cmap="RdYlBu", rasterized=True, vmin=-1.5, vmax=1.5)
+    c3 = axs[0, 2].pcolormesh(X, Y, np.abs(u_amp)/np.abs(u_scn_amp).max(), cmap="magma", rasterized=True)
     cb3 = fig.colorbar(c3, ax=axs[0, 2], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
-    cb3.set_label(r"Difference")
-    cb3.set_ticks([-1.5, 1.5])
-    cb3.set_ticklabels([r'-1.5', r'1.5'], fontsize=7)
+    cb3.set_label(r"|Error| / max($u$)")
+    cb3.set_ticks([0, np.max(np.abs(u_amp)/np.abs(u_scn_amp).max())])
+    cb3.set_ticklabels([f'{0:.1f}', f'{np.max(np.abs(u_amp)/np.abs(u_scn_amp).max()):.4f}'], fontsize=7)
     axs[0, 2].axis("off")
     axs[0, 2].set_aspect("equal")
 
@@ -336,13 +334,11 @@ def plot_pinns_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_s
     axs[1, 1].set_aspect("equal")
 
     # Phase of the total wave
-    c6 = axs[1, 2].pcolormesh(X, Y, u_phase, cmap="twilight_shifted", rasterized=True, vmin=-(np.pi), vmax=(np.pi))#, vmin=-(np.trunc(np.max(np.abs(u_phase)) * decimales) / decimales), vmax=(np.trunc(np.max(np.abs(u_phase)) * decimales) / decimales))
+    c6 = axs[1, 2].pcolormesh(X, Y, u_phase/np.abs(u_scn_phase).max(), cmap="magma", rasterized=True)
     cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
-    cb6.set_label(r"Difference")
-    cb6.set_ticks([-(np.pi),(np.pi)])
-    cb6.set_ticklabels([r'-$\pi$', r'$\pi$'], fontsize=7)
-    #cb6.set_ticks([-(np.trunc(np.max(np.abs(u_phase)) * decimales) / decimales), (np.trunc(np.max(np.abs(u_phase)) * decimales) / decimales)])
-    #cb6.set_ticklabels([f'{-(np.trunc(np.max(np.abs(u_phase)) * decimales) / decimales)}', f'{(np.trunc(np.max(np.abs(u_phase)) * decimales) / decimales)}'], fontsize=7)
+    cb6.set_label(r"|Error| / max($u$)")
+    cb6.set_ticks([0, np.max(u_phase)/np.abs(u_scn_phase).max())])
+    cb6.set_ticklabels([f'{0:.1f}', f'{np.max(np.abs(u_phase)/np.abs(u_scn_phase).max()):.4f}'], fontsize=7)
     axs[1, 2].axis("off")
     axs[1, 2].set_aspect("equal")
 
