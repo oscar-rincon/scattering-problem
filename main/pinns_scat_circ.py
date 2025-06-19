@@ -232,7 +232,9 @@ def train_adam(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_rig
         loss.backward(retain_graph=True)
         optimizer.step()
         iter += 1
-        if iter % 1000 == 0:
+        results.append([iter, loss.item()])
+        if iter % 500 == 0:
+            torch.save(model.state_dict(), f'models_iters/scattering_{iter}.pt')
             print(f"Adam - Iter: {iter} - Loss: {loss.item()}")
 
 
@@ -252,7 +254,9 @@ def closure(model, optimizer, x_f, y_f, x_inner, y_inner, x_left, y_left, x_righ
     # Update iteration counter and print loss every 100 iterations
     global iter
     iter += 1
-    if iter % 1000 == 0:
+    results.append([iter, loss.item()])
+    if iter % 500 == 0:
+        torch.save(model.state_dict(), f'models_iters/scattering_{iter}.pt')
         print(f"Iteration {iter}, Loss: {loss.item()}")
             
     return loss
@@ -557,9 +561,6 @@ def process_displacement_pinns(model, l_e, r_i, k, n_grid, X, Y, R_exact, u_scn_
     
     return u_sc_amp_pinns,u_sc_phase_pinns,u_amp_pinns, u_phase_pinns, diff_uscn_amp, diff_u_scn_phase 
 
-
-
-
 if __name__== "__main__":
 
     # Parameters
@@ -575,7 +576,7 @@ if __name__== "__main__":
 
     if not os.path.exists('datos'):
         os.makedirs('datos')
-
+    results = []
     # Initialize the iteration counter
     iter = 0
     side_length = 2 * l_e  # Side length of the square
@@ -583,21 +584,20 @@ if __name__== "__main__":
     # Generate points for the annular region and boundaries
     x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top = generate_points(n_Omega_P, side_length, r_i, n_Gamma_I, n_Gamma_E)
 
-
     # Initialize the model
     model = MLP(input_size=2, output_size=2, hidden_layers=3, hidden_units=50, activation_function=nn.Tanh()).to(device)
     model.apply(init_weights)
 
     # Training with Adam optimizer
     start_time_adam = time.time()
-    train_adam(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=10_000)
+    train_adam(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=5_000)
     end_time_adam = time.time()
     adam_training_time = end_time_adam - start_time_adam
     print(f"Adam training time: {adam_training_time:.6e} seconds")
 
     # Training with L-BFGS optimizer
     start_time_lbfgs = time.time()
-    train_lbfgs(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=10_000)
+    train_lbfgs(model, x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top, k, num_iter=5_000)
     end_time_lbfgs = time.time()
     lbfgs_training_time = end_time_lbfgs - start_time_lbfgs
     print(f"LBFGS training time: {lbfgs_training_time:.6e} seconds")
@@ -607,7 +607,7 @@ if __name__== "__main__":
     print(f"Total training time: {total_training_time:.6e} seconds")
 
     # Save the model
-    torch.save(model.state_dict(), f'Scattering.pt')
+    #torch.save(model.state_dict(), f'scattering.pt')
 
     # Save training summary to a text file
     with open('datos/scattering_problem_training_times.txt', 'w') as file:
@@ -615,3 +615,7 @@ if __name__== "__main__":
         file.write(f"LBFGS training time: {lbfgs_training_time:.6e} seconds\n")
         file.write(f"Total training time: {total_training_time:.6e} seconds\n")
         file.write(f"Total iterations: {iter}\n")   
+
+    # Convert results to numpy array, save training data to CSV, and save model state
+    results = np.array(results)
+    np.savetxt("datos/scattering_training_loss.csv", results, delimiter=",", header="Iter,Loss", comments="")
