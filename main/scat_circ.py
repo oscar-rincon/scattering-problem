@@ -334,10 +334,10 @@ def plot_pinns_displacements(X, Y, u_inc_amp, u_scn_amp, u_amp, u_inc_phase, u_s
     axs[1, 1].set_aspect("equal")
 
     # Phase of the total wave
-    c6 = axs[1, 2].pcolormesh(X, Y, u_phase/np.abs(u_scn_phase).max(), cmap="magma", rasterized=True)
+    c6 = axs[1, 2].pcolormesh(X, Y, np.abs(u_phase)/np.abs(u_scn_phase).max(), cmap="magma", rasterized=True)
     cb6 = fig.colorbar(c6, ax=axs[1, 2], shrink=shrink, orientation="horizontal", pad=0.07, format='%.4f')
     cb6.set_label(r"|Error| / max($u$)")
-    cb6.set_ticks([0, np.max(u_phase)/(np.abs(u_scn_phase).max())])
+    cb6.set_ticks([0, np.max(np.abs(u_phase))/(np.abs(u_scn_phase).max())])
     cb6.set_ticklabels([f'{0:.1f}', f'{np.max(np.abs(u_phase)/np.abs(u_scn_phase).max()):.4f}'], fontsize=7)
     axs[1, 2].axis("off")
     axs[1, 2].set_aspect("equal")

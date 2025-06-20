@@ -442,7 +442,7 @@ def initialize_and_load_model(model_path):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Initialize the model
-    model = MLP(input_size=2, output_size=2, hidden_layers=3, hidden_units=50, activation_function=nn.Tanh()).to(device)
+    model = MLP(input_size=2, output_size=2, hidden_layers=2, hidden_units=75, activation_function=nn.Tanh()).to(device)
     
     # Load the pre-trained model
     model.load_state_dict(torch.load(model_path))
@@ -585,7 +585,7 @@ if __name__== "__main__":
     x_f, y_f, x_inner, y_inner, x_left, y_left, x_right, y_right, x_bottom, y_bottom, x_top, y_top = generate_points(n_Omega_P, side_length, r_i, n_Gamma_I, n_Gamma_E)
 
     # Initialize the model
-    model = MLP(input_size=2, output_size=2, hidden_layers=3, hidden_units=50, activation_function=nn.Tanh()).to(device)
+    model = MLP(input_size=2, output_size=2, hidden_layers=2, hidden_units=75, activation_function=nn.Tanh()).to(device)
     model.apply(init_weights)
 
     # Training with Adam optimizer
@@ -607,10 +607,10 @@ if __name__== "__main__":
     print(f"Total training time: {total_training_time:.6e} seconds")
 
     # Save the model
-    #torch.save(model.state_dict(), f'scattering.pt')
+    torch.save(model.state_dict(), f'Scattering_1_25.pt')
 
     # Save training summary to a text file
-    with open('datos/scattering_problem_training_times.txt', 'w') as file:
+    with open('datos_comparativos/1_25_scattering_problem_training_times.txt', 'w') as file:
         file.write(f"Adam training time: {adam_training_time:.6e} seconds\n")
         file.write(f"LBFGS training time: {lbfgs_training_time:.6e} seconds\n")
         file.write(f"Total training time: {total_training_time:.6e} seconds\n")

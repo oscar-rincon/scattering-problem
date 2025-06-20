@@ -1,0 +1,4 @@
+Adam training time: 8.566198e+01 seconds
+LBFGS training time: 2.054422e+02 seconds
+Total training time: 2.911042e+02 seconds
+Total iterations: 10000
